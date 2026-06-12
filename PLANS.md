@@ -52,7 +52,7 @@ Deliverables:
 - Permission-aware notification preview. Complete.
 - Minimal Danish inbox with delete and clear-all. Complete.
 - Local unit/lint/APK build. Complete.
-- GitHub Actions APK and report artifacts. Implemented; first run pending.
+- GitHub Actions APK and report artifacts. Complete.
 
 Exit criteria:
 
@@ -61,8 +61,16 @@ Exit criteria:
 - Item persists locally. Automated repository validation complete.
 - Notification is emitted when permission is granted. Device validation
   pending.
-- Parser and repository tests pass. Parser complete locally; repository
-  emulator run pending in GitHub Actions.
+- Parser and repository tests pass. Complete locally and in GitHub Actions.
+
+Automated status:
+
+- Local unit tests, lint, debug APK, and test APK pass.
+- GitHub Actions unit/lint/build and emulator jobs pass.
+- Workflow run:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27443739014`.
+- Artifacts: debug APKs, build reports, and instrumentation reports.
+- Manual source-app acceptance remains pending.
 
 ### M2 - Local API feasibility slice
 
