@@ -1,0 +1,21 @@
+# Android
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+coverage/
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
