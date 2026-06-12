@@ -1,31 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".SendToG2Application"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="Send to G2"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/ic_launcher"
+        android:supportsRtl="true"
         android:theme="@style/Theme.SendToG2">
 
         <activity
             android:name=".share.ShareReceiverActivity"
+            android:excludeFromRecents="true"
             android:exported="true"
-            android:theme="@style/Theme.ShareReceiver"
-            android:label="Send to G2">
-
+            android:noHistory="true"
+            android:theme="@style/Theme.SendToG2.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/html" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -33,7 +35,14 @@
             </intent-filter>
         </activity>
 
-        <!-- MainActivity/debug UI to be added during Android scaffold. -->
-
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
+
 </manifest>

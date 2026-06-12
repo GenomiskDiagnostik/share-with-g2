@@ -16,20 +16,23 @@ protocols.
 
 ### Phase 0: repository bootstrap
 
-- Import and commit the starter documentation.
-- Confirm Android application ID and Even Hub package ID.
-- Select supported Android SDK and toolchain versions from current official
-  documentation.
-- Record the initial test matrix.
+- Import and commit the starter documentation. Complete.
+- Confirm Android application ID. Complete.
+- Confirm Even Hub package ID. Pending before the Even Hub scaffold.
+- Select supported Android SDK and toolchain versions. Complete.
+- Record the initial test matrix. Complete.
 
 ### Phase 1: Android inbound-share vertical slice
 
-- Scaffold a minimal Kotlin/Compose Android app.
-- Register text-only Sharesheet intent filters.
+- Scaffold a minimal Kotlin/Compose Android app. Complete.
+- Register text-only Sharesheet intent filters. Complete.
 - Implement parser, URL classification, title generation, and input limits.
-- Persist accepted items through Room.
+  Complete.
+- Persist accepted items through Room. Complete.
 - Emit a short notification preview behind the notification permission gate.
-- Show a minimal newest-first debug list.
+  Complete.
+- Show a minimal newest-first debug list. Complete.
+- Complete GitHub emulator and manual source-app validation. Pending.
 
 ### Phase 2: local API feasibility slice
 

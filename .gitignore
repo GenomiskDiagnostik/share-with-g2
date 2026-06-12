@@ -1,9 +1,16 @@
 # Android
 .gradle/
 build/
+**/build/
 local.properties
 *.apk
 *.aab
+*.iml
+.kotlin/
+.android/
+captures/
+*.hprof
+apps/android/app/schemas/
 
 # Node / Vite
 node_modules/

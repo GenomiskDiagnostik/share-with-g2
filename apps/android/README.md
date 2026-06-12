@@ -1,42 +1,56 @@
 # Android Companion App
 
-This directory is reserved for the Android companion app.
+The Android app is the persistence owner for Send to G2. It receives text and
+link shares, stores them in Room, emits a short notification preview, and
+shows a minimal local inbox for diagnostics and deletion.
 
-## Responsibilities
+## Baseline
 
-- Android Sharesheet target: `Send to G2`.
-- Receive `ACTION_SEND` text/link/html shares.
-- Store shared items locally in Room.
-- Emit notification previews.
-- Expose local API for the Even Hub app.
+- Application ID: `io.github.genomiskdiagnostik.sendtog2`
+- Minimum SDK: 26
+- Compile and target SDK: 36
+- JDK: 17
+- Gradle: 8.13
+- Android Gradle Plugin: 8.13.2
+- Kotlin: 2.3.21
+- Compose BOM: 2026.05.01
+- Room: 2.8.4 with KSP
 
-## Suggested package
+The versions are intentionally pinned to the latest compatible Android 16
+toolchain. Newer AndroidX Core and AGP releases require API 37 and are not part
+of this baseline.
 
-```text
-com.example.sendtog2
+## Build
+
+Set `JAVA_HOME` to a JDK 17 installation and `ANDROID_HOME` to an Android SDK
+containing platform 36 and build-tools 36.0.0.
+
+```powershell
+.\gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
 ```
 
-Replace before public distribution.
+The debug APK is written to:
 
-## First scaffold recommendation
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
 
-Use Android Studio or Gradle to create a Kotlin app with:
+GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 
-- Kotlin
-- Jetpack Compose
-- Room
-- DataStore
-- Coroutines
-- AndroidX Core
-- AndroidX Lifecycle
-- NotificationCompat
+## Implemented slice
 
-## First implementation target
+- Sharesheet receiver for `text/plain`, `text/html`, and `text/*`.
+- HTML converted to plain text.
+- 64 KiB maximum stored text length.
+- URL classification for complete HTTP/HTTPS URLs.
+- Room persistence with newest-first ordering.
+- Notification channel and permission-aware preview.
+- Danish local inbox with single-item delete and clear-all.
+- Parser, Android intent, and Room repository tests.
 
-Do not start with a polished UI. Start with:
+## Deferred
 
-1. `ShareReceiverActivity`.
-2. `ShareParser`.
-3. Room persistence.
-4. Notification preview.
-5. Tiny debug screen listing stored items.
+- Local HTTP API.
+- Foreground service/server lifecycle.
+- Even Hub transport probe.
+- G2 reader UI.
