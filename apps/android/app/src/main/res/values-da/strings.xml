@@ -5,6 +5,7 @@
     <string name="notification_channel_description">Viser korte previews af tekst og links delt til G2.</string>
     <string name="notification_title">Delt til G2</string>
     <string name="share_saved">Gemt i G2-indbakken</string>
+    <string name="share_link_saved">Link gemt; læsevenligt indhold hentes</string>
     <string name="share_invalid">Delingen indeholder ingen understøttet tekst.</string>
     <string name="share_too_large">Teksten er for lang til G2-indbakken.</string>
     <string name="inbox_title">Delt indbakke</string>

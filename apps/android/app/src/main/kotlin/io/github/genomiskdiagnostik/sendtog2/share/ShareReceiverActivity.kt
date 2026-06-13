@@ -8,6 +8,8 @@ import io.github.genomiskdiagnostik.sendtog2.R
 import io.github.genomiskdiagnostik.sendtog2.SendToG2Application
 import io.github.genomiskdiagnostik.sendtog2.domain.ShareParseResult
 import io.github.genomiskdiagnostik.sendtog2.domain.ShareParser
+import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
+import io.github.genomiskdiagnostik.sendtog2.link.LinkContentWorkScheduler
 import io.github.genomiskdiagnostik.sendtog2.notification.SharedNotificationService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,7 +30,15 @@ class ShareReceiverActivity : ComponentActivity() {
                     val application = application as SendToG2Application
                     application.repository.insert(result.item)
                     SharedNotificationService.show(this@ShareReceiverActivity, result.item)
-                    R.string.share_saved
+                    if (result.item.type == SharedItemType.URL) {
+                        LinkContentWorkScheduler.enqueue(
+                            context = this@ShareReceiverActivity,
+                            item = result.item,
+                        )
+                        R.string.share_link_saved
+                    } else {
+                        R.string.share_saved
+                    }
                 }
 
                 ShareParseResult.TooLarge -> R.string.share_too_large

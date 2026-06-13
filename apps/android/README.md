@@ -43,6 +43,10 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - HTML converted to plain text.
 - 64 KiB maximum stored text length.
 - URL classification for complete HTTP/HTTPS URLs.
+- Background extraction of readable text from public HTTP/HTTPS links.
+- ChatGPT-style shares prefer the latest rendered assistant response.
+- Original URLs remain appended to extracted content.
+- Link extraction uses no cookies or login session and falls back to the URL.
 - Room persistence with newest-first ordering.
 - Notification channel and permission-aware preview.
 - Danish local inbox with single-item delete and clear-all.
@@ -53,9 +57,13 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - Danish and English UI selected from the system or per-app language.
 - Router-fake and loopback HTTP tests.
 
+Link extraction is intentionally bounded to a 1 MiB response with short
+timeouts and at most three redirects. Loopback, link-local, private-network,
+credential-bearing, and non-HTTP(S) destinations are rejected.
+
 ## Deferred
 
 - Foreground service/server lifecycle.
 - Physical Even Hub loopback and cleartext validation.
 - Local API mutation endpoints.
-- G2 reader UI.
+- Authenticated or JavaScript-only page extraction.

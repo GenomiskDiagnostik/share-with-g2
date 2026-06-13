@@ -12,6 +12,13 @@ interface SharedItemStore {
 
     suspend fun getById(id: String): SharedItem?
 
+    suspend fun updateLinkContent(
+        id: String,
+        expectedUrl: String,
+        title: String?,
+        text: String,
+    ): Boolean
+
     suspend fun deleteById(id: String): Boolean
 
     suspend fun clearAll()

@@ -20,6 +20,14 @@ class SharedItemRepository(
     override suspend fun getById(id: String): SharedItem? =
         dao.getById(id)?.toDomain()
 
+    override suspend fun updateLinkContent(
+        id: String,
+        expectedUrl: String,
+        title: String?,
+        text: String,
+    ): Boolean =
+        dao.updateLinkContent(id, expectedUrl, title, text) > 0
+
     override suspend fun deleteById(id: String): Boolean =
         dao.deleteById(id) > 0
 

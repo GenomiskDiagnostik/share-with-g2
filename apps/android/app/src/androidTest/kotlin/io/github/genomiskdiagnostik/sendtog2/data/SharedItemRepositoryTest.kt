@@ -58,11 +58,47 @@ class SharedItemRepositoryTest {
         assertTrue(repository.getAll().isEmpty())
     }
 
-    private fun item(id: String, createdAt: Long) = SharedItem(
+    @Test
+    fun updatesLinkContentOnlyWhileOriginalUrlIsStillStored() = runBlocking {
+        val url = "https://example.com/article"
+        repository.insert(
+            item(
+                id = "link",
+                createdAt = 100,
+                type = SharedItemType.URL,
+                text = url,
+            ),
+        )
+
+        assertTrue(
+            repository.updateLinkContent(
+                id = "link",
+                expectedUrl = url,
+                title = "Article",
+                text = "Readable article\n\n$url",
+            ),
+        )
+        assertEquals("Article", repository.getById("link")?.title)
+        assertFalse(
+            repository.updateLinkContent(
+                id = "link",
+                expectedUrl = url,
+                title = "Stale update",
+                text = "Should not replace",
+            ),
+        )
+    }
+
+    private fun item(
+        id: String,
+        createdAt: Long,
+        type: SharedItemType = SharedItemType.TEXT,
+        text: String = "Content for $id",
+    ) = SharedItem(
         id = id,
-        type = SharedItemType.TEXT,
+        type = type,
         title = id,
-        text = "Content for $id",
+        text = text,
         sourceApp = "test",
         createdAt = createdAt,
         read = false,

@@ -5,6 +5,7 @@
     <string name="notification_channel_description">Shows short previews of text and links shared to G2.</string>
     <string name="notification_title">Shared to G2</string>
     <string name="share_saved">Saved to the G2 inbox</string>
+    <string name="share_link_saved">Link saved; readable content is loading</string>
     <string name="share_invalid">The share contains no supported text.</string>
     <string name="share_too_large">The text is too long for the G2 inbox.</string>
     <string name="inbox_title">Shared inbox</string>

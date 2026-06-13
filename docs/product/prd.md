@@ -39,6 +39,11 @@ Create a local-first bridge from Android Sharesheet to an Even Hub G2 Shared Inb
 - Extract `Intent.EXTRA_TEXT` for text shares.
 - Extract title/subject when available.
 - Detect whether a text payload is likely a URL.
+- For complete public HTTP/HTTPS URLs, save immediately and attempt to replace
+  the URL-only body with readable linked-page text in background.
+- Preserve the original URL with extracted content.
+- Keep the URL-only item when content requires login, client-side rendering,
+  exceeds limits, or cannot be fetched safely.
 - Normalize and store content.
 - Finish quickly after save and notification.
 

@@ -52,6 +52,7 @@ Deliverables:
 - Room entity, DAO, database, and repository. Complete.
 - Permission-aware notification preview. Complete.
 - Minimal Danish inbox with delete and clear-all. Complete.
+- Background readable-content extraction for public links. Complete locally.
 - Local unit/lint/APK build. Complete.
 - GitHub Actions APK and report artifacts. Complete.
 
@@ -177,6 +178,10 @@ Exit criteria:
   boundaries where possible.
 - G2 reader input: click selects the next item, scroll moves pages, and
   double-click opens the safe exit interaction.
+- Public links are stored immediately, then enriched in WorkManager without
+  cookies; failures retain the original URL.
+- Link retrieval blocks local/private destinations, follows at most three
+  validated redirects, and caps responses at 1 MiB.
 - Delete and clear remain disabled until transport origin/authorization is
   validated.
 
@@ -189,5 +194,5 @@ Exit criteria:
 
 ## Immediate next task
 
-Run the updated Even Hub workflow. Then execute the physical-phone reachability
-script before enabling mutations.
+Run Android CI and validate a public ChatGPT share link on a phone. Then execute
+the physical-phone reachability script before enabling mutations.

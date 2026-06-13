@@ -30,6 +30,21 @@ Send to G2 handles user-shared content that may include private messages, links,
 - Normalize control characters.
 - Reject empty payloads.
 - Store minimal source metadata.
+- Fetch shared links without cookies, referrer, or the user's browser session.
+- Reject link extraction for loopback, link-local, private-network,
+  credential-bearing, and non-HTTP(S) destinations.
+- Limit linked-page responses, redirects, and network timeouts.
+
+## Linked-page retrieval
+
+When a user explicitly shares a public link, Android may contact that website
+directly to create a readable local copy. This reveals the phone's network
+address and the `SendToG2/0.1` user agent to the destination, as any direct page
+request would. No Send to G2 cloud service is involved.
+
+The fetch does not reuse browser or ChatGPT cookies. Private conversations,
+login-protected pages, anti-bot challenges, and pages whose content exists only
+after JavaScript execution therefore remain URL-only.
 
 ## G2 rendering
 
@@ -51,6 +66,8 @@ Send to G2 handles user-shared content that may include private messages, links,
 | Other local process reads API | Bind to loopback; avoid LAN; consider random token if needed |
 | Browser page reads M2 API through wildcard CORS | Keep M2 read-only; measure WebView origin; remove wildcard or add authorization before mutations |
 | Malicious source app sends huge payload | Size caps and parser validation |
+| Shared URL targets a local service | Public-address checks on every redirect |
+| Linked page returns a huge response | 1 MiB response cap and 64 KiB stored-text cap |
 | HTML injection | Plain-text extraction only |
 | Sensitive content in logs | No full-content logging |
 | Accidental cloud exposure | No cloud dependency in v0.1 |
