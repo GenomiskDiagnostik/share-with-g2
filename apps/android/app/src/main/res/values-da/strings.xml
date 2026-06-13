@@ -47,4 +47,17 @@
     <string name="local_api_origin">Origin: %1$s</string>
     <string name="local_api_user_agent">User agent: %1$s</string>
     <string name="local_api_header_missing">ikke angivet</string>
+    <string name="pairing_title">Par Even Hub</string>
+    <string name="pairing_body">Kopiér denne private nøgle ind i Even Hub-appen på samme telefon. Den giver adgang til den lokale indbakke.</string>
+    <string name="pairing_access_key">Send to G2-adgangsnøgle</string>
+    <string name="pairing_key_loading">Opretter adgangsnøgle…</string>
+    <string name="pairing_key_hidden">•••• •••• •••• •••• •••• •••• •••• ••••</string>
+    <string name="pairing_show_key">Vis nøgle</string>
+    <string name="pairing_hide_key">Skjul nøgle</string>
+    <string name="pairing_copy_key">Kopiér nøgle</string>
+    <string name="pairing_key_copied">Adgangsnøgle kopieret</string>
+    <string name="pairing_rotate_key">Opret ny nøgle</string>
+    <string name="pairing_rotate_title">Opret en ny adgangsnøgle?</string>
+    <string name="pairing_rotate_body">Even Hub mister adgangen, indtil den nye nøgle er kopieret ind.</string>
+    <string name="pairing_rotate_confirm">Opret ny nøgle</string>
 </resources>

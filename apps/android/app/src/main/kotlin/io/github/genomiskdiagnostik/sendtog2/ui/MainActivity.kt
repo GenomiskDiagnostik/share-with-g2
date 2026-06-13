@@ -1,9 +1,12 @@
 package io.github.genomiskdiagnostik.sendtog2.ui
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -55,7 +58,7 @@ import java.time.format.DateTimeFormatter
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels {
         val app = application as SendToG2Application
-        MainViewModel.Factory(app.repository, app.localApiServer)
+        MainViewModel.Factory(app.repository, app.localApiServer, app.accessKeyStore)
     }
 
     private var notificationPermissionGranted by mutableStateOf(true)
@@ -77,16 +80,20 @@ class MainActivity : ComponentActivity() {
                 val apiDiagnostics by (application as SendToG2Application)
                     .localApiServer.diagnostics.collectAsStateWithLifecycle()
                 val selfTest by viewModel.selfTest.collectAsStateWithLifecycle()
+                val accessKey by viewModel.accessKey.collectAsStateWithLifecycle()
                 Surface(modifier = Modifier.fillMaxSize()) {
                     InboxScreen(
                         items = items,
                         apiState = apiState,
                         apiDiagnostics = apiDiagnostics,
                         selfTest = selfTest,
+                        accessKey = accessKey,
                         notificationPermissionGranted = notificationPermissionGranted,
                         onRequestNotificationPermission = ::requestNotificationPermission,
                         onRunSelfTest = viewModel::runLocalApiSelfTest,
                         onRestartApi = viewModel::restartLocalApi,
+                        onCopyAccessKey = ::copyAccessKey,
+                        onRotateAccessKey = viewModel::rotateAccessKey,
                         onDelete = viewModel::delete,
                         onClearAll = viewModel::clearAll,
                     )
@@ -112,6 +119,14 @@ class MainActivity : ComponentActivity() {
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+
+    private fun copyAccessKey(accessKey: String) {
+        if (accessKey.isBlank()) return
+        getSystemService(ClipboardManager::class.java).setPrimaryClip(
+            ClipData.newPlainText(getString(R.string.pairing_access_key), accessKey),
+        )
+        Toast.makeText(this, R.string.pairing_key_copied, Toast.LENGTH_SHORT).show()
+    }
 }
 
 @Composable
@@ -120,10 +135,13 @@ private fun InboxScreen(
     apiState: LocalApiState,
     apiDiagnostics: LocalApiDiagnosticsState,
     selfTest: LocalApiSelfTestState,
+    accessKey: String,
     notificationPermissionGranted: Boolean,
     onRequestNotificationPermission: () -> Unit,
     onRunSelfTest: () -> Unit,
     onRestartApi: () -> Unit,
+    onCopyAccessKey: (String) -> Unit,
+    onRotateAccessKey: () -> Unit,
     onDelete: (String) -> Unit,
     onClearAll: () -> Unit,
 ) {
@@ -152,58 +170,157 @@ private fun InboxScreen(
         )
     }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = stringResource(R.string.inbox_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = pluralStringResource(R.plurals.item_count, items.size, items.size),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-        LocalApiCard(
-            state = apiState,
-            diagnostics = apiDiagnostics,
-            selfTest = selfTest,
-            onRunSelfTest = onRunSelfTest,
-            onRestartApi = onRestartApi,
-        )
-
-        if (!notificationPermissionGranted) {
-            Spacer(modifier = Modifier.height(16.dp))
-            NotificationPermissionCard(onRequestNotificationPermission)
+        item {
+            Column {
+                Text(
+                    text = stringResource(R.string.inbox_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.item_count,
+                        items.size,
+                        items.size,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        item {
+            LocalApiCard(
+                state = apiState,
+                diagnostics = apiDiagnostics,
+                selfTest = selfTest,
+                onRunSelfTest = onRunSelfTest,
+                onRestartApi = onRestartApi,
+            )
+        }
+        item {
+            AccessKeyCard(
+                accessKey = accessKey,
+                onCopy = onCopyAccessKey,
+                onRotate = onRotateAccessKey,
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        if (!notificationPermissionGranted) {
+            item {
+                NotificationPermissionCard(onRequestNotificationPermission)
+            }
+        }
+
         if (items.isEmpty()) {
-            Text(
-                text = stringResource(R.string.empty_inbox),
-                style = MaterialTheme.typography.bodyLarge,
-            )
+            item {
+                Text(
+                    text = stringResource(R.string.empty_inbox),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
         } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                OutlinedButton(onClick = { showClearConfirmation = true }) {
-                    Text(stringResource(R.string.clear_all))
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    OutlinedButton(onClick = { showClearConfirmation = true }) {
+                        Text(stringResource(R.string.clear_all))
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                items(items, key = SharedItem::id) { item ->
-                    SharedItemCard(item = item, onDelete = { onDelete(item.id) })
+            items(items, key = SharedItem::id) { item ->
+                SharedItemCard(item = item, onDelete = { onDelete(item.id) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccessKeyCard(
+    accessKey: String,
+    onCopy: (String) -> Unit,
+    onRotate: () -> Unit,
+) {
+    var showKey by remember { mutableStateOf(false) }
+    var showRotationConfirmation by remember { mutableStateOf(false) }
+
+    if (showRotationConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showRotationConfirmation = false },
+            title = { Text(stringResource(R.string.pairing_rotate_title)) },
+            text = { Text(stringResource(R.string.pairing_rotate_body)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showRotationConfirmation = false
+                        showKey = false
+                        onRotate()
+                    },
+                ) {
+                    Text(stringResource(R.string.pairing_rotate_confirm))
                 }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showRotationConfirmation = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    Card {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.pairing_title),
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.pairing_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = when {
+                    accessKey.isBlank() -> stringResource(R.string.pairing_key_loading)
+                    showKey -> accessKey.chunked(4).joinToString(" ")
+                    else -> stringResource(R.string.pairing_key_hidden)
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { showKey = !showKey },
+                    enabled = accessKey.isNotBlank(),
+                ) {
+                    Text(
+                        stringResource(
+                            if (showKey) R.string.pairing_hide_key else R.string.pairing_show_key,
+                        ),
+                    )
+                }
+                Button(
+                    onClick = { onCopy(accessKey) },
+                    enabled = accessKey.isNotBlank(),
+                ) {
+                    Text(stringResource(R.string.pairing_copy_key))
+                }
+            }
+            OutlinedButton(
+                onClick = { showRotationConfirmation = true },
+                enabled = accessKey.isNotBlank(),
+            ) {
+                Text(stringResource(R.string.pairing_rotate_key))
             }
         }
     }

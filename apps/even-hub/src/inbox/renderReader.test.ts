@@ -9,6 +9,12 @@ describe('renderReader', () => {
     expect(
       renderReader({ status: 'error', reason: 'network' }, 'da').body,
     ).toContain('lokale indbakke')
+    const unauthorized = renderReader(
+      { status: 'error', reason: 'unauthorized' },
+      'da',
+    )
+    expect(unauthorized.needsPairing).toBe(true)
+    expect(unauthorized.heading).toContain('Par')
   })
 
   it('renders item, type, and page metadata', () => {

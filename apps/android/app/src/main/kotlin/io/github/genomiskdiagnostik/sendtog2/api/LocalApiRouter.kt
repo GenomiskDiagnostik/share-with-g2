@@ -23,6 +23,7 @@ data class ApiResponse(
 class LocalApiRouter(
     private val store: SharedItemStore,
     private val version: String = API_VERSION,
+    private val authorizer: LocalApiAuthorizer = LocalApiAuthorizer { true },
 ) {
     private val json = Json {
         encodeDefaults = true
@@ -42,6 +43,16 @@ class LocalApiRouter(
             )
         }
 
+        if (request.path != "/health" && !authorizer.isAuthorized(request)) {
+            return jsonResponse(
+                status = 401,
+                value = ErrorDto("unauthorized"),
+                extraHeaders = mapOf(
+                    "WWW-Authenticate" to """Bearer realm="Send to G2"""",
+                ),
+            )
+        }
+
         return when (request.path) {
             "/health" -> jsonResponse(
                 status = 200,
@@ -53,7 +64,21 @@ class LocalApiRouter(
                 value = store.getAll().map(SharedItem::toDto),
             )
 
-            else -> jsonResponse(status = 404, value = ErrorDto("not_found"))
+            else -> routeItem(request.path)
+        }
+    }
+
+    private suspend fun routeItem(path: String): ApiResponse {
+        val id = path.removePrefix(ITEM_PATH_PREFIX)
+        if (!path.startsWith(ITEM_PATH_PREFIX) || id.isBlank() || '/' in id) {
+            return jsonResponse(status = 404, value = ErrorDto("not_found"))
+        }
+
+        val item = store.getById(id)
+        return if (item == null) {
+            jsonResponse(status = 404, value = ErrorDto("not_found"))
+        } else {
+            jsonResponse(status = 200, value = item.toDto())
         }
     }
 
@@ -72,12 +97,14 @@ class LocalApiRouter(
     private fun corsHeaders(): Map<String, String> = mapOf(
         "Access-Control-Allow-Origin" to "*",
         "Access-Control-Allow-Methods" to "GET, OPTIONS",
-        "Access-Control-Allow-Headers" to "Content-Type, X-Send-To-G2-Client",
+        "Access-Control-Allow-Headers" to
+            "Authorization, Content-Type, X-Send-To-G2-Client",
         "Access-Control-Max-Age" to "600",
     )
 
     companion object {
         const val API_VERSION = "0.1.0"
+        private const val ITEM_PATH_PREFIX = "/items/"
     }
 }
 

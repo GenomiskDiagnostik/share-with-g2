@@ -25,28 +25,33 @@ export class LocalApiClient {
     private readonly baseUrl = DEFAULT_API_BASE_URL,
     private readonly fetcher: Fetcher = fetch,
     private readonly timeoutMs = 3_000,
+    private readonly accessKey?: string,
   ) {}
 
   async health(): Promise<HealthResponse> {
-    return parseHealth(await this.get('/health'))
+    return parseHealth(await this.get('/health', false))
   }
 
   async items(): Promise<SharedItem[]> {
-    const value: unknown = await this.get('/items')
+    const value: unknown = await this.get('/items', true)
     if (!Array.isArray(value)) throw new InvalidApiResponseError()
     return value.map(parseSharedItem)
   }
 
-  private async get(path: string): Promise<unknown> {
+  private async get(path: string, authenticated: boolean): Promise<unknown> {
     const controller = new AbortController()
     const timeout = globalThis.setTimeout(() => controller.abort(), this.timeoutMs)
     try {
+      const headers: Record<string, string> = {
+        Accept: 'application/json',
+        'X-Send-To-G2-Client': 'even-hub',
+      }
+      if (authenticated && this.accessKey) {
+        headers.Authorization = `Bearer ${this.accessKey}`
+      }
       const response = await this.fetcher(`${this.baseUrl}${path}`, {
         method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'X-Send-To-G2-Client': 'even-hub',
-        },
+        headers,
         signal: controller.signal,
       })
       if (!response.ok) throw new ApiStatusError(response.status)

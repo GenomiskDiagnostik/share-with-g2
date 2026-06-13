@@ -32,9 +32,22 @@ describe('LocalApiClient', () => {
         read: false,
       },
     ]))
-    const client = new LocalApiClient('http://127.0.0.1:8765', fetcher)
+    const client = new LocalApiClient(
+      'http://127.0.0.1:8765',
+      fetcher,
+      3_000,
+      'private-key',
+    )
 
     await expect(client.items()).resolves.toHaveLength(1)
+    expect(fetcher).toHaveBeenCalledWith(
+      'http://127.0.0.1:8765/items',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer private-key',
+        }),
+      }),
+    )
   })
 
   it('rejects unknown item types before rendering', async () => {
@@ -50,6 +63,25 @@ describe('LocalApiClient', () => {
     const client = new LocalApiClient('http://127.0.0.1:8765', fetcher)
 
     await expect(client.items()).rejects.toBeInstanceOf(InvalidApiResponseError)
+  })
+
+  it('does not send the access key to the public health endpoint', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({ ok: true, version: '0.1.0' }))
+    const client = new LocalApiClient(
+      'http://127.0.0.1:8765',
+      fetcher,
+      3_000,
+      'private-key',
+    )
+
+    await client.health()
+
+    expect(fetcher).toHaveBeenCalledWith(
+      'http://127.0.0.1:8765/health',
+      expect.objectContaining({
+        headers: expect.not.objectContaining({ Authorization: expect.anything() }),
+      }),
+    )
   })
 })
 

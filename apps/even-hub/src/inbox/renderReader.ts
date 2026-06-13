@@ -12,6 +12,7 @@ export type ReaderView = {
   glassText: string
   canNavigateItems: boolean
   canNavigatePages: boolean
+  needsPairing: boolean
 }
 
 export function renderReader(
@@ -27,9 +28,10 @@ export function renderReader(
   if (state.status === 'error') {
     return staticView(
       'error',
-      copy.failedHeading,
+      state.reason === 'unauthorized' ? copy.pairingTitle : copy.failedHeading,
       copy.readerFailure[state.reason],
       copy,
+      state.reason === 'unauthorized',
     )
   }
 
@@ -64,6 +66,7 @@ export function renderReader(
     glassText: clampGlassText(glassText),
     canNavigateItems: state.items.length > 1,
     canNavigatePages: pages.length > 1,
+    needsPairing: false,
   }
 }
 
@@ -97,6 +100,7 @@ function staticView(
   heading: string,
   body: string,
   copy: AppStrings,
+  needsPairing = false,
 ): ReaderView {
   return {
     status,
@@ -108,6 +112,7 @@ function staticView(
     glassText: `Send to G2\n\n${heading}\n\n${body}`,
     canNavigateItems: false,
     canNavigatePages: false,
+    needsPairing,
   }
 }
 

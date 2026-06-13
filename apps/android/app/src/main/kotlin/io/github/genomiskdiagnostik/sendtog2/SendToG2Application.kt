@@ -4,12 +4,21 @@ import android.app.Application
 import androidx.room.Room
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiRouter
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiServer
+import io.github.genomiskdiagnostik.sendtog2.api.LocalApiAccessKeyStore
+import io.github.genomiskdiagnostik.sendtog2.api.BearerTokenAuthorizer
 import io.github.genomiskdiagnostik.sendtog2.data.SharedDatabase
 import io.github.genomiskdiagnostik.sendtog2.data.SharedItemRepository
 import io.github.genomiskdiagnostik.sendtog2.notification.SharedNotificationService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class SendToG2Application : Application() {
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     lateinit var repository: SharedItemRepository
+        private set
+    lateinit var accessKeyStore: LocalApiAccessKeyStore
         private set
     lateinit var localApiServer: LocalApiServer
         private set
@@ -24,9 +33,14 @@ class SendToG2Application : Application() {
         ).build()
 
         repository = SharedItemRepository(database.sharedItemDao())
+        accessKeyStore = LocalApiAccessKeyStore(applicationContext)
         localApiServer = LocalApiServer(
-            router = LocalApiRouter(repository),
+            router = LocalApiRouter(
+                store = repository,
+                authorizer = BearerTokenAuthorizer(accessKeyStore),
+            ),
         )
+        applicationScope.launch { accessKeyStore.getOrCreate() }
         localApiServer.start()
         SharedNotificationService.createChannel(this)
     }

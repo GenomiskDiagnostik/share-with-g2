@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Deliver and validate the read-only Even Hub Shared Inbox reader while physical
-loopback reachability and mutation security remain explicit gates.
+Deliver and validate the authenticated Even Hub Shared Inbox reader while
+physical loopback reachability remains an explicit gate.
 
 ## Current phase
 
@@ -92,6 +92,8 @@ Deliverables:
 - Restartable in-process API lifecycle. Complete locally.
 - Privacy-safe request diagnostics and Android self-test. Complete locally.
 - Explicit Even Hub client marker for origin/user-agent capture. Complete locally.
+- Per-installation access key and Android pairing controls. Complete locally.
+- Bearer authorization for `/items` and `/items/{id}`. Complete locally.
 
 Automated status:
 
@@ -99,8 +101,9 @@ Automated status:
   GitHub Actions.
 - Android unit tests, lint, APK build, and emulator instrumentation pass
   locally or in GitHub Actions.
-- 34 Android unit tests cover parser, persistence, link extraction, API
-  routing, restart, self-test, and bounded request diagnostics locally.
+- 38 Android unit tests cover parser, persistence, link extraction, API
+  routing, access-key authorization, restart, self-test, and bounded request
+  diagnostics locally.
 - Even Hub workflow run:
   `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638537`.
 - Android workflow run:
@@ -110,6 +113,8 @@ Automated status:
 - The Android diagnostics card can now run a loopback self-test, restart the
   server, count requests, and show the last identified Even Hub origin and
   user-agent without recording inbox content.
+- The Android app can reveal, copy, and rotate a 192-bit local API key without
+  including it in diagnostics.
 
 Exit criteria:
 
@@ -125,6 +130,7 @@ Deliverables:
 
 - Even Hub app scaffold. Complete.
 - Typed API client. Complete.
+- Local access-key pairing and WebView persistence. Complete locally.
 - Empty, loading, reader, and API failure states. Complete.
 - Pagination and navigation. Complete.
 - Delete current.
@@ -132,10 +138,14 @@ Deliverables:
 - Explicit browser/simulator demo mode. Complete.
 - Danish and English reader copy. Complete.
 - Pagination, reader state, rendering, locale, and API tests. Complete locally.
+- Dedicated unauthorized/pairing state. Complete locally.
 
 Automated status:
 
-- 18 Even Hub tests pass locally.
+- 22 Even Hub test cases cover API validation, key storage, pagination,
+  navigation, rendering, reachability, and locale selection. The current
+  sandbox permits TypeScript typechecking; GitHub Actions remains the
+  authoritative Vitest run.
 - TypeScript and Vite production build pass locally.
 - `.ehpk` packaging passes locally.
 - Browser validation covers multi-page navigation, item wraparound, disabled
@@ -183,6 +193,8 @@ Exit criteria:
 - The in-process server is restartable but is not promoted to a foreground
   service until physical background-lifetime evidence requires it.
 - M2 wildcard CORS is temporary until the packaged WebView origin is measured.
+- `/health` is public; all `/items` routes require the per-installation Bearer
+  key documented in ADR-007.
 - Even Hub sends `X-Send-To-G2-Client: even-hub`; Android records bounded
   method/path/origin/user-agent metadata only.
 - Android and Even Hub select Danish or English from the runtime locale.
@@ -194,18 +206,18 @@ Exit criteria:
   cookies; failures retain the original URL.
 - Link retrieval blocks local/private destinations, follows at most three
   validated redirects, and caps responses at 1 MiB.
-- Delete and clear remain disabled until transport origin/authorization is
-  validated.
+- Delete and clear remain disabled until authenticated transport is validated
+  in the packaged Even Hub runtime.
 
 ## Open decisions
 
 - Whether Even Hub WebView can reach Android loopback.
 - Whether Android needs a foreground service for local server lifetime.
-- How to restrict local API reads before enabling mutation endpoints.
 - Exact G2 confirmation or undo behavior for destructive actions.
 
 ## Immediate next task
 
-Install the new artifacts and execute the physical-phone reachability and link
-content scripts. Use Android diagnostics to record the packaged WebView origin
-and background lifetime before enabling mutations.
+Build and install the new artifacts, pair Even Hub with the Android key, and
+execute the physical-phone reachability and link-content scripts. Use Android
+diagnostics to record the packaged WebView origin and background lifetime
+before enabling mutations.

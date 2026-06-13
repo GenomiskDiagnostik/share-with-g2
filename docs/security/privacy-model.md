@@ -15,10 +15,13 @@ Send to G2 handles user-shared content that may include private messages, links,
 ## Data transport
 
 - Local HTTP API binds to `127.0.0.1` by default.
-- M2 exposes only read-only health and list endpoints.
+- `/health` is public and contains no inbox data.
+- All `/items` reads require a random per-installation Bearer key.
 - Wildcard CORS is temporary for Even Hub WebView feasibility measurement.
-- Do not enable delete/clear endpoints until the WebView origin or an
-  authorization mechanism has been validated.
+- The key is stored in Android app-private DataStore and Even Hub local storage.
+- Key rotation invalidates the previous Even Hub pairing.
+- Do not enable delete/clear endpoints until the authenticated flow has also
+  been validated in the packaged WebView.
 - Local API diagnostics retain only bounded method, path, client marker,
   origin, user-agent, loopback address, timestamp, and request count in memory.
 - Never include query strings, request bodies, response bodies, or shared item
@@ -67,8 +70,9 @@ after JavaScript execution therefore remain URL-only.
 
 | Threat | Mitigation |
 |---|---|
-| Other local process reads API | Bind to loopback; avoid LAN; consider random token if needed |
-| Browser page reads M2 API through wildcard CORS | Keep M2 read-only; measure WebView origin; remove wildcard or add authorization before mutations |
+| Other local process reads API | Bind to loopback; require a 192-bit per-installation access key for inbox routes |
+| Browser page reads API through wildcard CORS | Require Bearer authorization; never put the key in URLs; continue measuring the WebView origin |
+| Access key is copied or exposed | Keep it out of logs and diagnostics; let the user rotate it from Android |
 | Malicious source app sends huge payload | Size caps and parser validation |
 | Shared URL targets a local service | Public-address checks on every redirect |
 | Linked page returns a huge response | 1 MiB response cap and 64 KiB stored-text cap |

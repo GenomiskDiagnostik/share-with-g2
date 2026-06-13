@@ -3,7 +3,7 @@ import { paginateText } from './pagination'
 
 export type ReaderState =
   | { status: 'loading' }
-  | { status: 'error'; reason: 'timeout' | 'http' | 'invalid-response' | 'network' }
+  | { status: 'error'; reason: ReaderFailureReason }
   | { status: 'empty' }
   | {
       status: 'ready'
@@ -14,7 +14,7 @@ export type ReaderState =
 
 export type ReaderAction =
   | { type: 'load'; items: SharedItem[] }
-  | { type: 'fail'; reason: 'timeout' | 'http' | 'invalid-response' | 'network' }
+  | { type: 'fail'; reason: ReaderFailureReason }
   | { type: 'next-item' }
   | { type: 'previous-item' }
   | { type: 'next-page' }
@@ -24,6 +24,13 @@ export type ReaderNavigationAction = Exclude<
   ReaderAction,
   { type: 'load' } | { type: 'fail' }
 >
+
+export type ReaderFailureReason =
+  | 'unauthorized'
+  | 'timeout'
+  | 'http'
+  | 'invalid-response'
+  | 'network'
 
 export function reduceReader(
   state: ReaderState,

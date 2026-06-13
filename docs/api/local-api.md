@@ -18,19 +18,21 @@ This must be treated as an assumption until tested in the target Even Hub runtim
 - Do not expose arbitrary file paths or content URI streams.
 - M2 temporarily returns wildcard CORS for read-only feasibility testing because
   the packaged Even Hub WebView origin is not known yet.
-- Replace wildcard CORS or add a local authorization mechanism before mutation
-  endpoints are enabled.
-- Do not add authentication in v0.1 unless the endpoint is exposed beyond loopback.
+- `/health` remains unauthenticated so transport failures can be distinguished
+  from pairing failures.
+- Every `/items` route requires `Authorization: Bearer <access-key>`.
+- The Android app creates a random per-installation key and lets the user copy
+  or rotate it. Even Hub stores the paired key in its local WebView storage.
+- Wildcard CORS does not grant inbox access without the key.
 
 ## Data type
 
 ```ts
 type SharedItem = {
   id: string
-  type: 'text' | 'url' | 'image' | 'file'
+  type: 'text' | 'url'
   title?: string
-  text?: string
-  uri?: string
+  text: string
   sourceApp?: string
   createdAt: number
   read: boolean
@@ -54,7 +56,7 @@ Response:
 
 ### GET /items
 
-Returns newest-first items.
+Returns newest-first items. Requires the Bearer access key.
 
 Response:
 
@@ -73,7 +75,7 @@ Response:
 
 ### GET /items/{id}
 
-Planned for M3 after transport and origin validation.
+Returns one item. Requires the Bearer access key.
 
 Responses:
 
@@ -82,7 +84,7 @@ Responses:
 
 ### DELETE /items/{id}
 
-Planned for M3 after transport and origin validation.
+Planned for M3. It will require the same Bearer access key.
 
 Responses:
 
@@ -91,7 +93,7 @@ Responses:
 
 ### DELETE /items
 
-Planned for M3 after transport and origin validation.
+Planned for M3. It will require the same Bearer access key.
 
 Responses:
 
@@ -103,12 +105,25 @@ The current Android server implements:
 
 - `GET /health`
 - `GET /items`
+- `GET /items/{id}`
 - `OPTIONS`
-- JSON `404` and `405` responses
+- JSON `401`, `404`, and `405` responses
 
 It rejects mutation methods and binds only to `127.0.0.1`. The server runs for
 the lifetime of the Android application process. This is a feasibility
 lifecycle, not the final background execution design.
+
+## Pairing contract
+
+1. Android creates a 32-character base64url key from 24 random bytes.
+2. The key is stored in app-private DataStore preferences.
+3. The user copies the raw key from the Android app into Even Hub.
+4. Even Hub stores it in local WebView storage and sends it only to protected
+   local API routes.
+5. Android compares tokens in constant time.
+6. Rotating the key immediately invalidates the previous pairing.
+
+The key must never appear in API diagnostics, logs, URLs, or query strings.
 
 ## Future endpoints
 

@@ -213,6 +213,7 @@ class LocalApiServer(
         200 -> "OK"
         204 -> "No Content"
         400 -> "Bad Request"
+        401 -> "Unauthorized"
         404 -> "Not Found"
         405 -> "Method Not Allowed"
         else -> "Internal Server Error"

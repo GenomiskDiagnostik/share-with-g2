@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.github.genomiskdiagnostik.sendtog2.api.HttpLocalApiHealthCheck
+import io.github.genomiskdiagnostik.sendtog2.api.LocalApiAccessKeyStore
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiHealthCheck
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiSelfTestState
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiServer
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 class MainViewModel(
     private val repository: SharedItemStore,
     private val localApiServer: LocalApiServer,
+    private val accessKeyStore: LocalApiAccessKeyStore,
     private val healthCheck: LocalApiHealthCheck = HttpLocalApiHealthCheck(),
 ) : ViewModel() {
     val items: StateFlow<List<SharedItem>> = repository.observeAll().stateIn(
@@ -31,6 +33,17 @@ class MainViewModel(
         LocalApiSelfTestState.Idle,
     )
     val selfTest: StateFlow<LocalApiSelfTestState> = mutableSelfTest.asStateFlow()
+    val accessKey: StateFlow<String> = accessKeyStore.accessKey.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = "",
+    )
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            accessKeyStore.getOrCreate()
+        }
+    }
 
     fun delete(id: String) {
         viewModelScope.launch {
@@ -59,14 +72,21 @@ class MainViewModel(
         }
     }
 
+    fun rotateAccessKey() {
+        viewModelScope.launch(Dispatchers.IO) {
+            accessKeyStore.rotate()
+        }
+    }
+
     class Factory(
         private val repository: SharedItemStore,
         private val localApiServer: LocalApiServer,
+        private val accessKeyStore: LocalApiAccessKeyStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MainViewModel::class.java))
-            return MainViewModel(repository, localApiServer) as T
+            return MainViewModel(repository, localApiServer, accessKeyStore) as T
         }
     }
 }

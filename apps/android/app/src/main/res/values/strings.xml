@@ -47,4 +47,17 @@
     <string name="local_api_origin">Origin: %1$s</string>
     <string name="local_api_user_agent">User agent: %1$s</string>
     <string name="local_api_header_missing">not supplied</string>
+    <string name="pairing_title">Pair Even Hub</string>
+    <string name="pairing_body">Copy this private key into the Even Hub app on this phone. It grants access to the local inbox.</string>
+    <string name="pairing_access_key">Send to G2 access key</string>
+    <string name="pairing_key_loading">Creating access key…</string>
+    <string name="pairing_key_hidden">•••• •••• •••• •••• •••• •••• •••• ••••</string>
+    <string name="pairing_show_key">Show key</string>
+    <string name="pairing_hide_key">Hide key</string>
+    <string name="pairing_copy_key">Copy key</string>
+    <string name="pairing_key_copied">Access key copied</string>
+    <string name="pairing_rotate_key">Create new key</string>
+    <string name="pairing_rotate_title">Create a new access key?</string>
+    <string name="pairing_rotate_body">Even Hub will lose access until the new key is copied into it.</string>
+    <string name="pairing_rotate_confirm">Create new key</string>
 </resources>

@@ -42,8 +42,9 @@ Vertical slice:
 2. Implement `GET /health` and `GET /items`.
 3. Add route tests.
 4. Create minimal Even Hub fetch probe.
-5. Test simulator and real device.
-6. Document results in `PLANS.md`.
+5. Add per-installation access-key pairing before exposing inbox data.
+6. Test simulator and real device.
+7. Document results in `PLANS.md`.
 
 Acceptance:
 

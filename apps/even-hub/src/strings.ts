@@ -20,7 +20,15 @@ export type AppStrings = {
   readerTitle: string
   readerLoading: string
   readerEmpty: string
-  readerFailure: Record<'timeout' | 'http' | 'invalid-response' | 'network', string>
+  readerFailure: Record<
+    'unauthorized' | 'timeout' | 'http' | 'invalid-response' | 'network',
+    string
+  >
+  pairingTitle: string
+  pairingLabel: string
+  pairingHelp: string
+  pairingSave: string
+  pairingInvalid: string
   readerMeta: (
     item: number,
     itemCount: number,
@@ -64,11 +72,17 @@ const strings: Record<SupportedLocale, AppStrings> = {
     readerLoading: 'Henter delte elementer...',
     readerEmpty: 'Ingen delte elementer endnu.',
     readerFailure: {
+      unauthorized: 'Indbakken skal parres med Android-appen før den kan læses.',
       timeout: 'Den lokale indbakke svarede ikke i tide.',
       http: 'Den lokale indbakke returnerede en HTTP-fejl.',
       'invalid-response': 'Den lokale indbakke returnerede ukendte data.',
       network: 'Kan ikke forbinde til telefonens lokale indbakke.',
     },
+    pairingTitle: 'Par med Android-appen',
+    pairingLabel: 'Adgangsnøgle',
+    pairingHelp: 'Kopiér nøglen fra “Par Even Hub” i Android-appen.',
+    pairingSave: 'Gem og forbind',
+    pairingInvalid: 'Indtast en gyldig adgangsnøgle.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · side ${page}/${pageCount}`,
     readerHelp: 'Klik: næste · Scroll: side · Dobbeltklik: luk',
@@ -105,11 +119,17 @@ const strings: Record<SupportedLocale, AppStrings> = {
     readerLoading: 'Loading shared items...',
     readerEmpty: 'No shared items yet.',
     readerFailure: {
+      unauthorized: 'The inbox must be paired with the Android app before it can be read.',
       timeout: 'The local inbox did not respond before the timeout.',
       http: 'The local inbox returned an HTTP error.',
       'invalid-response': 'The local inbox returned unknown data.',
       network: 'Could not connect to the phone’s local inbox.',
     },
+    pairingTitle: 'Pair with the Android app',
+    pairingLabel: 'Access key',
+    pairingHelp: 'Copy the key from “Pair Even Hub” in the Android app.',
+    pairingSave: 'Save and connect',
+    pairingInvalid: 'Enter a valid access key.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · page ${page}/${pageCount}`,
     readerHelp: 'Click: next · Scroll: page · Double-click: close',

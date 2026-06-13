@@ -53,6 +53,9 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - Parser, Android intent, and Room repository tests.
 - Read-only local API on `127.0.0.1:8765`.
 - `GET /health`, `GET /items`, and CORS preflight handling.
+- Per-installation local API access key stored in DataStore.
+- Copy, reveal, and rotate controls for pairing Even Hub.
+- Bearer authorization for item list and item detail reads.
 - Danish local API diagnostics in the companion app.
 - Local API self-test, restart control, request count, and bounded last-client
   metadata.
@@ -70,4 +73,4 @@ credential-bearing, and non-HTTP(S) destinations are rejected.
   restarted manually.
 - Physical Even Hub loopback and cleartext validation.
 - Local API mutation endpoints.
-- Authenticated or JavaScript-only page extraction.
+- JavaScript-only page extraction.

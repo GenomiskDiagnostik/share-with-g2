@@ -118,6 +118,45 @@ h1 {
   margin-top: 20px;
 }
 
+.pairing-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.pairing-form[hidden] {
+  display: none;
+}
+
+.pairing-form label {
+  color: #bfe6cb;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pairing-form input {
+  width: 100%;
+  border: 1px solid #5a7865;
+  border-radius: 12px;
+  padding: 14px;
+  color: #eef7f0;
+  background: #101914;
+  font: inherit;
+  letter-spacing: 0.04em;
+}
+
+.pairing-form p {
+  margin: 0 0 4px;
+  color: #91a99a;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pairing-form input:focus-visible {
+  outline: 3px solid #8ed1a4;
+  outline-offset: 2px;
+}
+
 .reader-actions [data-reload] {
   grid-column: 1 / -1;
 }

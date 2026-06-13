@@ -19,7 +19,7 @@ class LocalApiRouterTest {
         assertEquals(200, response.status)
         assertEquals("*", response.headers["Access-Control-Allow-Origin"])
         assertEquals(
-            "Content-Type, X-Send-To-G2-Client",
+            "Authorization, Content-Type, X-Send-To-G2-Client",
             response.headers["Access-Control-Allow-Headers"],
         )
         assertEquals("0.1.0-test", json(response.body)["version"]?.jsonPrimitive?.content)
@@ -48,6 +48,36 @@ class LocalApiRouterTest {
 
         assertEquals(405, response.status)
         assertEquals("GET, OPTIONS", response.headers["Allow"])
+    }
+
+    @Test
+    fun `items require authorization while health stays public`() = runBlocking {
+        val router = LocalApiRouter(
+            store = FakeSharedItemStore(),
+            version = "0.1.0-test",
+            authorizer = LocalApiAuthorizer { false },
+        )
+
+        assertEquals(200, router.route(ApiRequest("GET", "/health")).status)
+        val response = router.route(ApiRequest("GET", "/items"))
+
+        assertEquals(401, response.status)
+        assertEquals(
+            """Bearer realm="Send to G2"""",
+            response.headers["WWW-Authenticate"],
+        )
+        assertEquals("unauthorized", json(response.body)["error"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `item detail returns an authenticated item`() = runBlocking {
+        val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
+
+        val response = router(store).route(ApiRequest("GET", "/items/one"))
+
+        assertEquals(200, response.status)
+        assertEquals("one", json(response.body)["id"]?.jsonPrimitive?.content)
+        assertEquals(404, router(store).route(ApiRequest("GET", "/items/missing")).status)
     }
 
     @Test

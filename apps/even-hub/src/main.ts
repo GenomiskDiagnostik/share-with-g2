@@ -10,10 +10,12 @@ import {
   InvalidApiResponseError,
   LocalApiClient,
 } from './api/localApiClient'
+import { loadAccessKey, saveAccessKey } from './auth/accessKey'
 import {
   reduceReader,
   type ReaderAction,
   type ReaderNavigationAction,
+  type ReaderFailureReason,
   type ReaderState,
 } from './inbox/readerState'
 import { DEMO_ITEMS, renderReader, type ReaderView } from './inbox/renderReader'
@@ -56,7 +58,7 @@ async function main() {
     await render()
   }
 
-  bindWebActions(root, dispatch)
+  bindWebActions(root, dispatch, strings)
   renderWeb(
     root,
     renderReader(state, locale),
@@ -97,7 +99,12 @@ async function main() {
     return
   }
 
-  const client = new LocalApiClient()
+  const client = new LocalApiClient(
+    undefined,
+    undefined,
+    undefined,
+    loadAccessKey(),
+  )
   try {
     await client.health()
     await dispatch({ type: 'load', items: await client.items() })
@@ -122,6 +129,21 @@ function renderWeb(
       <h1 id="reader-heading"></h1>
       <div class="reader-body" id="reader-body"></div>
       <p class="reader-help" id="reader-help"></p>
+      <form class="pairing-form" data-pairing-form hidden>
+        <label for="access-key" id="pairing-label"></label>
+        <input
+          id="access-key"
+          name="access-key"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          required
+        >
+        <p id="pairing-help"></p>
+        <button type="submit" id="pairing-save"></button>
+      </form>
       <div class="reader-actions">
         <button type="button" data-action="previous-item" id="previous-item"></button>
         <button type="button" data-action="previous-page" id="previous-page"></button>
@@ -142,6 +164,12 @@ function renderWeb(
   setText(root, '#next-page', strings.nextPage)
   setText(root, '#next-item', strings.nextItem)
   setText(root, '#retry', strings.retry)
+  setText(root, '#pairing-label', strings.pairingLabel)
+  setText(root, '#pairing-help', strings.pairingHelp)
+  setText(root, '#pairing-save', strings.pairingSave)
+
+  const pairingForm = root.querySelector<HTMLFormElement>('[data-pairing-form]')
+  if (pairingForm) pairingForm.hidden = !view.needsPairing
 
   const badgeElement = root.querySelector<HTMLElement>('#mode-badge')
   if (badge && badgeElement) {
@@ -157,13 +185,33 @@ function renderWeb(
   }
 
   const retryButton = root.querySelector<HTMLButtonElement>('#retry')
-  if (retryButton) retryButton.hidden = view.status !== 'error'
+  if (retryButton) {
+    retryButton.hidden = view.status !== 'error' || view.needsPairing
+  }
 }
 
 function bindWebActions(
   root: HTMLElement,
   dispatch: (action: ReaderAction) => Promise<void>,
+  strings: ReturnType<typeof getStrings>,
 ) {
+  root.addEventListener('submit', event => {
+    const form = (event.target as HTMLElement).closest<HTMLFormElement>(
+      '[data-pairing-form]',
+    )
+    if (!form) return
+    event.preventDefault()
+    const input = form.elements.namedItem('access-key')
+    if (!(input instanceof HTMLInputElement)) return
+    input.setCustomValidity('')
+    if (!saveAccessKey(input.value)) {
+      input.setCustomValidity(strings.pairingInvalid)
+      input.reportValidity()
+      return
+    }
+    window.location.reload()
+  })
+
   root.addEventListener('click', event => {
     const reloadButton = (event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-reload]',
@@ -222,9 +270,11 @@ function bindBridgeActions(
 
 function classifyFailure(
   error: unknown,
-): 'timeout' | 'http' | 'invalid-response' | 'network' {
+): ReaderFailureReason {
   if (error instanceof DOMException && error.name === 'AbortError') return 'timeout'
-  if (error instanceof ApiStatusError) return 'http'
+  if (error instanceof ApiStatusError) {
+    return error.status === 401 ? 'unauthorized' : 'http'
+  }
   if (error instanceof InvalidApiResponseError) return 'invalid-response'
   return 'network'
 }
