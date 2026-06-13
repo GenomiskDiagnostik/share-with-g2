@@ -87,7 +87,20 @@ Deliverables:
 - CORS contract documented; packaged cleartext behavior pending.
 - Android router and real loopback HTTP tests. Complete.
 - Even Hub API validation and reachability tests. Complete.
-- GitHub Actions `.ehpk` artifact. Pending first workflow run.
+- GitHub Actions `.ehpk` artifact. Complete.
+
+Automated status:
+
+- Even Hub tests, TypeScript build, and `.ehpk` packaging pass locally and in
+  GitHub Actions.
+- Android unit tests, lint, APK build, and emulator instrumentation pass
+  locally or in GitHub Actions.
+- Even Hub workflow run:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638537`.
+- Android workflow run:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638539`.
+- Artifacts: Even Hub package, debug APKs, Android build reports, and Android
+  instrumentation reports.
 
 Exit criteria:
 
@@ -159,5 +172,5 @@ Exit criteria:
 
 ## Immediate next task
 
-Run the Android and Even Hub workflows, download the APK and `.ehpk` artifacts,
-then execute the physical-phone reachability script and record the result.
+Download the APK and `.ehpk` artifacts, then execute the physical-phone
+reachability script and record the result.
