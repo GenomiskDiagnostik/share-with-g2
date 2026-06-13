@@ -18,6 +18,10 @@ class LocalApiRouterTest {
 
         assertEquals(200, response.status)
         assertEquals("*", response.headers["Access-Control-Allow-Origin"])
+        assertEquals(
+            "Content-Type, X-Send-To-G2-Client",
+            response.headers["Access-Control-Allow-Headers"],
+        )
         assertEquals("0.1.0-test", json(response.body)["version"]?.jsonPrimitive?.content)
     }
 

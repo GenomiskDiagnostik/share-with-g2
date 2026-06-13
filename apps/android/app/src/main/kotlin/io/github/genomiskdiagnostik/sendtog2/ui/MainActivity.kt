@@ -43,6 +43,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.genomiskdiagnostik.sendtog2.R
 import io.github.genomiskdiagnostik.sendtog2.SendToG2Application
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiPhase
+import io.github.genomiskdiagnostik.sendtog2.api.LocalApiDiagnosticsState
+import io.github.genomiskdiagnostik.sendtog2.api.LocalApiSelfTestState
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiState
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
@@ -52,7 +54,8 @@ import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels {
-        MainViewModel.Factory((application as SendToG2Application).repository)
+        val app = application as SendToG2Application
+        MainViewModel.Factory(app.repository, app.localApiServer)
     }
 
     private var notificationPermissionGranted by mutableStateOf(true)
@@ -71,12 +74,19 @@ class MainActivity : ComponentActivity() {
                 val items by viewModel.items.collectAsStateWithLifecycle()
                 val apiState by (application as SendToG2Application)
                     .localApiServer.state.collectAsStateWithLifecycle()
+                val apiDiagnostics by (application as SendToG2Application)
+                    .localApiServer.diagnostics.collectAsStateWithLifecycle()
+                val selfTest by viewModel.selfTest.collectAsStateWithLifecycle()
                 Surface(modifier = Modifier.fillMaxSize()) {
                     InboxScreen(
                         items = items,
                         apiState = apiState,
+                        apiDiagnostics = apiDiagnostics,
+                        selfTest = selfTest,
                         notificationPermissionGranted = notificationPermissionGranted,
                         onRequestNotificationPermission = ::requestNotificationPermission,
+                        onRunSelfTest = viewModel::runLocalApiSelfTest,
+                        onRestartApi = viewModel::restartLocalApi,
                         onDelete = viewModel::delete,
                         onClearAll = viewModel::clearAll,
                     )
@@ -108,8 +118,12 @@ class MainActivity : ComponentActivity() {
 private fun InboxScreen(
     items: List<SharedItem>,
     apiState: LocalApiState,
+    apiDiagnostics: LocalApiDiagnosticsState,
+    selfTest: LocalApiSelfTestState,
     notificationPermissionGranted: Boolean,
     onRequestNotificationPermission: () -> Unit,
+    onRunSelfTest: () -> Unit,
+    onRestartApi: () -> Unit,
     onDelete: (String) -> Unit,
     onClearAll: () -> Unit,
 ) {
@@ -155,7 +169,13 @@ private fun InboxScreen(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-        LocalApiCard(apiState)
+        LocalApiCard(
+            state = apiState,
+            diagnostics = apiDiagnostics,
+            selfTest = selfTest,
+            onRunSelfTest = onRunSelfTest,
+            onRestartApi = onRestartApi,
+        )
 
         if (!notificationPermissionGranted) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -190,7 +210,16 @@ private fun InboxScreen(
 }
 
 @Composable
-private fun LocalApiCard(state: LocalApiState) {
+private fun LocalApiCard(
+    state: LocalApiState,
+    diagnostics: LocalApiDiagnosticsState,
+    selfTest: LocalApiSelfTestState,
+    onRunSelfTest: () -> Unit,
+    onRestartApi: () -> Unit,
+) {
+    val lastRequest = diagnostics.lastRequest
+    val lastEvenHub = diagnostics.lastEvenHubRequest
+    var showDetails by remember { mutableStateOf(false) }
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -220,6 +249,104 @@ private fun LocalApiCard(state: LocalApiState) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onRunSelfTest,
+                    enabled = state.phase == LocalApiPhase.RUNNING &&
+                        selfTest != LocalApiSelfTestState.Running,
+                ) {
+                    Text(stringResource(R.string.local_api_self_test_action))
+                }
+                OutlinedButton(onClick = onRestartApi) {
+                    Text(stringResource(R.string.local_api_restart_action))
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = when (selfTest) {
+                    LocalApiSelfTestState.Idle ->
+                        stringResource(R.string.local_api_self_test_idle)
+                    LocalApiSelfTestState.Running ->
+                        stringResource(R.string.local_api_self_test_running)
+                    is LocalApiSelfTestState.Success ->
+                        stringResource(
+                            R.string.local_api_self_test_success,
+                            selfTest.version,
+                        )
+                    is LocalApiSelfTestState.Failure ->
+                        stringResource(
+                            R.string.local_api_self_test_failure,
+                            selfTest.reason,
+                        )
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = lastEvenHub?.let {
+                    stringResource(
+                        R.string.local_api_even_hub_seen,
+                        formatTimestamp(it.receivedAt),
+                    )
+                } ?: stringResource(R.string.local_api_even_hub_not_seen),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            OutlinedButton(onClick = { showDetails = !showDetails }) {
+                Text(
+                    stringResource(
+                        if (showDetails) {
+                            R.string.local_api_hide_details
+                        } else {
+                            R.string.local_api_show_details
+                        },
+                    ),
+                )
+            }
+            if (showDetails) {
+                Spacer(modifier = Modifier.height(6.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(
+                        R.string.local_api_request_count,
+                        diagnostics.requestCount,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Text(
+                    text = lastRequest?.let {
+                        stringResource(
+                            R.string.local_api_last_request,
+                            it.method,
+                            it.path,
+                            it.client ?: stringResource(R.string.local_api_unknown_client),
+                        )
+                    } ?: stringResource(R.string.local_api_no_requests),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.local_api_origin,
+                        lastEvenHub?.origin
+                            ?: stringResource(R.string.local_api_header_missing),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.local_api_user_agent,
+                        lastEvenHub?.userAgent
+                            ?: stringResource(R.string.local_api_header_missing),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

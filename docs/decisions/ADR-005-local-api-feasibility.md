@@ -29,6 +29,11 @@ network exposure would increase the risk before the transport is proven.
   revisit authentication/origin restrictions before enabling deletes.
 - Use package ID
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox` for the Even Hub app.
+- Mark Even Hub requests with `X-Send-To-G2-Client: even-hub` and allow that
+  header in CORS preflight.
+- Keep bounded in-memory diagnostics for request count, method, path, origin,
+  user-agent, client marker, timestamp, and loopback address.
+- Add Android loopback self-test and manual server restart controls.
 
 ## Consequences
 
@@ -40,6 +45,8 @@ network exposure would increase the risk before the transport is proven.
   needs a new transport ADR.
 - No cloud relay, LAN binding, file ingestion, or private Even protocol is
   introduced.
+- Restart support improves recovery within the same application process but
+  does not solve Android process eviction.
 
 ## Validation
 
@@ -49,3 +56,5 @@ network exposure would increase the risk before the transport is proven.
 - GitHub Actions builds Android APKs and an Even Hub `.ehpk` artifact.
 - Manual device validation records loopback reachability, cleartext behavior,
   WebView origin, and Android process lifetime.
+- Unit tests cover restart, self-test, CORS client header, and metadata capture
+  through a real loopback socket.

@@ -30,4 +30,21 @@
     <string name="local_api_stopped">API is stopped</string>
     <string name="local_api_failed">API could not start</string>
     <string name="local_api_probe_note">Even Hub access still needs confirmation on a physical phone.</string>
+    <string name="local_api_self_test_action">Run self-test</string>
+    <string name="local_api_restart_action">Restart API</string>
+    <string name="local_api_self_test_idle">Self-test has not run.</string>
+    <string name="local_api_self_test_running">Testing the local API…</string>
+    <string name="local_api_self_test_success">Self-test passed · API %1$s</string>
+    <string name="local_api_self_test_failure">Self-test failed · %1$s</string>
+    <string name="local_api_request_count">Requests observed: %1$d</string>
+    <string name="local_api_last_request">Latest: %1$s %2$s · %3$s</string>
+    <string name="local_api_no_requests">No API requests observed yet.</string>
+    <string name="local_api_unknown_client">unknown client</string>
+    <string name="local_api_even_hub_seen">Even Hub last seen: %1$s</string>
+    <string name="local_api_even_hub_not_seen">Even Hub has not reached the API yet.</string>
+    <string name="local_api_show_details">Show diagnostics</string>
+    <string name="local_api_hide_details">Hide diagnostics</string>
+    <string name="local_api_origin">Origin: %1$s</string>
+    <string name="local_api_user_agent">User agent: %1$s</string>
+    <string name="local_api_header_missing">not supplied</string>
 </resources>

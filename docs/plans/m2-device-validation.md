@@ -15,9 +15,11 @@ green.
 1. Open `Send to G2`.
 2. Confirm the diagnostics card says the API is running at
    `http://127.0.0.1:8765`.
-3. Share a short text into the app.
-4. Confirm the Android inbox shows one item.
-5. While the process is alive, verify with `adb` if available:
+3. Tap `Run self-test` / `Kør selvtest` and confirm it passes.
+4. Tap restart and confirm the API returns to running state.
+5. Share a short text into the app.
+6. Confirm the Android inbox shows one item.
+7. While the process is alive, verify with `adb` if available:
 
    ```bash
    adb shell 'toybox wget -qO- http://127.0.0.1:8765/health'
@@ -29,8 +31,14 @@ green.
 1. Launch the packaged `Send to G2` plugin.
 2. Record the companion WebView result.
 3. Record the G2 display result.
-4. Repeat after backgrounding the Android app for 30 seconds.
-5. Repeat after Android removes the companion process.
+4. Return to Android, expand diagnostics, and record:
+   - whether Even Hub was seen,
+   - the exact origin value or `not supplied`,
+   - the bounded user-agent value,
+   - the latest method/path and request count.
+5. Repeat after backgrounding the Android app for 30 seconds.
+6. Repeat after Android removes the companion process.
+7. Use restart, relaunch Even Hub, and confirm requests are observed again.
 
 ## Evidence To Record
 
@@ -41,6 +49,7 @@ green.
 - Whether CORS succeeded.
 - The packaged WebView origin, if visible in developer diagnostics.
 - How long the Android process remained reachable in the background.
+- Whether manual restart restored access after an API failure.
 
 Do not include shared item text in screenshots, logs, or issue reports.
 

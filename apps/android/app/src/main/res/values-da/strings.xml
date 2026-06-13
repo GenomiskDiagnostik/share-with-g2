@@ -30,4 +30,21 @@
     <string name="local_api_stopped">API er stoppet</string>
     <string name="local_api_failed">API kunne ikke starte</string>
     <string name="local_api_probe_note">Even Hub-adgang skal stadig bekræftes på en fysisk telefon.</string>
+    <string name="local_api_self_test_action">Kør selvtest</string>
+    <string name="local_api_restart_action">Genstart API</string>
+    <string name="local_api_self_test_idle">Selvtest er ikke kørt.</string>
+    <string name="local_api_self_test_running">Tester det lokale API…</string>
+    <string name="local_api_self_test_success">Selvtest bestået · API %1$s</string>
+    <string name="local_api_self_test_failure">Selvtest fejlede · %1$s</string>
+    <string name="local_api_request_count">Observerede kald: %1$d</string>
+    <string name="local_api_last_request">Seneste: %1$s %2$s · %3$s</string>
+    <string name="local_api_no_requests">Ingen API-kald observeret endnu.</string>
+    <string name="local_api_unknown_client">ukendt klient</string>
+    <string name="local_api_even_hub_seen">Even Hub sidst set: %1$s</string>
+    <string name="local_api_even_hub_not_seen">Even Hub har endnu ikke nået API’et.</string>
+    <string name="local_api_show_details">Vis diagnostik</string>
+    <string name="local_api_hide_details">Skjul diagnostik</string>
+    <string name="local_api_origin">Origin: %1$s</string>
+    <string name="local_api_user_agent">User agent: %1$s</string>
+    <string name="local_api_header_missing">ikke angivet</string>
 </resources>

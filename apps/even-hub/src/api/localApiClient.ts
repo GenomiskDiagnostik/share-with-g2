@@ -43,7 +43,10 @@ export class LocalApiClient {
     try {
       const response = await this.fetcher(`${this.baseUrl}${path}`, {
         method: 'GET',
-        headers: { Accept: 'application/json' },
+        headers: {
+          Accept: 'application/json',
+          'X-Send-To-G2-Client': 'even-hub',
+        },
         signal: controller.signal,
       })
       if (!response.ok) throw new ApiStatusError(response.status)

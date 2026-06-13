@@ -89,6 +89,9 @@ Deliverables:
 - Android router and real loopback HTTP tests. Complete.
 - Even Hub API validation and reachability tests. Complete.
 - GitHub Actions `.ehpk` artifact. Complete.
+- Restartable in-process API lifecycle. Complete locally.
+- Privacy-safe request diagnostics and Android self-test. Complete locally.
+- Explicit Even Hub client marker for origin/user-agent capture. Complete locally.
 
 Automated status:
 
@@ -96,12 +99,17 @@ Automated status:
   GitHub Actions.
 - Android unit tests, lint, APK build, and emulator instrumentation pass
   locally or in GitHub Actions.
+- 34 Android unit tests cover parser, persistence, link extraction, API
+  routing, restart, self-test, and bounded request diagnostics locally.
 - Even Hub workflow run:
   `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638537`.
 - Android workflow run:
   `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638539`.
 - Artifacts: Even Hub package, debug APKs, Android build reports, and Android
   instrumentation reports.
+- The Android diagnostics card can now run a loopback self-test, restart the
+  server, count requests, and show the last identified Even Hub origin and
+  user-agent without recording inbox content.
 
 Exit criteria:
 
@@ -147,8 +155,8 @@ Deliverables:
 
 - Item detail and mutation API endpoints.
 - Local server lifecycle handling.
-- End-to-end manual test script.
-- Diagnostics without shared-content logging.
+- End-to-end manual test script. In progress.
+- Diagnostics without shared-content logging. Complete for local API requests.
 - Privacy/security review.
 - Release checklist.
 
@@ -172,7 +180,11 @@ Exit criteria:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
 - M2 local API is read-only and runs for the Android application process
   lifetime.
+- The in-process server is restartable but is not promoted to a foreground
+  service until physical background-lifetime evidence requires it.
 - M2 wildcard CORS is temporary until the packaged WebView origin is measured.
+- Even Hub sends `X-Send-To-G2-Client: even-hub`; Android records bounded
+  method/path/origin/user-agent metadata only.
 - Android and Even Hub select Danish or English from the runtime locale.
 - Reader body pages are capped at 700 characters, preserving paragraph or word
   boundaries where possible.
@@ -194,5 +206,6 @@ Exit criteria:
 
 ## Immediate next task
 
-Run Android CI and validate a public ChatGPT share link on a phone. Then execute
-the physical-phone reachability script before enabling mutations.
+Install the new artifacts and execute the physical-phone reachability and link
+content scripts. Use Android diagnostics to record the packaged WebView origin
+and background lifetime before enabling mutations.

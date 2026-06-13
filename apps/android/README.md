@@ -54,6 +54,9 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - Read-only local API on `127.0.0.1:8765`.
 - `GET /health`, `GET /items`, and CORS preflight handling.
 - Danish local API diagnostics in the companion app.
+- Local API self-test, restart control, request count, and bounded last-client
+  metadata.
+- Last identified Even Hub origin and user-agent, without shared-content logs.
 - Danish and English UI selected from the system or per-app language.
 - Router-fake and loopback HTTP tests.
 
@@ -63,7 +66,8 @@ credential-bearing, and non-HTTP(S) destinations are rejected.
 
 ## Deferred
 
-- Foreground service/server lifecycle.
+- Foreground service/server lifecycle; the current process-local server can be
+  restarted manually.
 - Physical Even Hub loopback and cleartext validation.
 - Local API mutation endpoints.
 - Authenticated or JavaScript-only page extraction.

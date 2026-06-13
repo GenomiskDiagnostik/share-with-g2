@@ -30,37 +30,48 @@ class LocalApiServer(
     private val router: LocalApiRouter,
     private val host: String = DEFAULT_HOST,
     private val port: Int = DEFAULT_PORT,
+    private val diagnosticsRecorder: LocalApiDiagnostics = LocalApiDiagnostics(),
 ) {
     private val bindAddress = InetAddress.getByName(host).also {
         require(it.isLoopbackAddress) { "Local API must bind to a loopback address" }
     }
-    private val acceptExecutor = Executors.newSingleThreadExecutor(::daemonThread)
-    private val clientExecutor = Executors.newFixedThreadPool(MAX_CLIENTS, ::daemonThread)
     private val mutableState = MutableStateFlow(
         LocalApiState(LocalApiPhase.STOPPED, "http://$host:$port"),
     )
     private var serverSocket: ServerSocket? = null
+    private var acceptExecutor: java.util.concurrent.ExecutorService? = null
+    private var clientExecutor: java.util.concurrent.ExecutorService? = null
 
     val state: StateFlow<LocalApiState> = mutableState.asStateFlow()
+    val diagnostics: StateFlow<LocalApiDiagnosticsState> = diagnosticsRecorder.state
 
     @Synchronized
     fun start() {
         if (serverSocket != null) return
 
         var socket: ServerSocket? = null
+        val acceptPool = Executors.newSingleThreadExecutor(::daemonThread)
+        val clientPool = Executors.newFixedThreadPool(MAX_CLIENTS, ::daemonThread)
         try {
             val candidate = ServerSocket()
             socket = candidate
             candidate.reuseAddress = true
             candidate.bind(InetSocketAddress(bindAddress, port))
             serverSocket = candidate
+            acceptExecutor = acceptPool
+            clientExecutor = clientPool
             mutableState.value = LocalApiState(
                 phase = LocalApiPhase.RUNNING,
                 url = "http://$host:${candidate.localPort}",
             )
-            acceptExecutor.execute { acceptLoop(candidate) }
+            acceptPool.execute { acceptLoop(candidate, clientPool) }
         } catch (error: Exception) {
             socket?.close()
+            acceptPool.shutdownNow()
+            clientPool.shutdownNow()
+            serverSocket = null
+            acceptExecutor = null
+            clientExecutor = null
             mutableState.value = LocalApiState(
                 phase = LocalApiPhase.FAILED,
                 url = "http://$host:$port",
@@ -73,16 +84,27 @@ class LocalApiServer(
     fun stop() {
         serverSocket?.close()
         serverSocket = null
-        acceptExecutor.shutdownNow()
-        clientExecutor.shutdownNow()
+        acceptExecutor?.shutdownNow()
+        clientExecutor?.shutdownNow()
+        acceptExecutor = null
+        clientExecutor = null
         mutableState.value = LocalApiState(LocalApiPhase.STOPPED, "http://$host:$port")
     }
 
-    private fun acceptLoop(socket: ServerSocket) {
+    @Synchronized
+    fun restart() {
+        stop()
+        start()
+    }
+
+    private fun acceptLoop(
+        socket: ServerSocket,
+        clients: java.util.concurrent.ExecutorService,
+    ) {
         while (!socket.isClosed) {
             try {
                 val client = socket.accept()
-                clientExecutor.execute { handle(client) }
+                clients.execute { handle(client) }
             } catch (_: Exception) {
                 if (!socket.isClosed) {
                     mutableState.value = LocalApiState(
@@ -101,7 +123,10 @@ class LocalApiServer(
             val input = BufferedInputStream(client.getInputStream())
             val output = BufferedOutputStream(client.getOutputStream())
             val response = try {
-                val request = readRequest(input)
+                val request = readRequest(input).copy(
+                    remoteAddress = client.inetAddress?.hostAddress,
+                )
+                diagnosticsRecorder.record(request)
                 runBlocking { router.route(request) }
             } catch (_: InvalidRequestException) {
                 ApiResponse(
@@ -128,12 +153,18 @@ class LocalApiServer(
         }
 
         var headerBytes = 0
+        val headers = linkedMapOf<String, String>()
         while (true) {
             val line = readLine(input, MAX_HEADER_LINE_BYTES)
             headerBytes += line.length
             if (headerBytes > MAX_HEADER_BYTES) throw InvalidRequestException()
             if (line.isEmpty()) break
-            if (!line.contains(':')) throw InvalidRequestException()
+            val separator = line.indexOf(':')
+            if (separator <= 0) throw InvalidRequestException()
+            val name = line.substring(0, separator).trim().lowercase(Locale.ROOT)
+            val value = line.substring(separator + 1).trim()
+            if (!HEADER_NAME_PATTERN.matches(name)) throw InvalidRequestException()
+            headers.putIfAbsent(name, value)
         }
 
         val path = parts[1].substringBefore('?')
@@ -141,6 +172,7 @@ class LocalApiServer(
         return ApiRequest(
             method = parts[0].uppercase(Locale.ROOT),
             path = path,
+            headers = headers,
         )
     }
 
@@ -196,6 +228,7 @@ class LocalApiServer(
         private const val MAX_HEADER_LINE_BYTES = 8_192
         private const val MAX_HEADER_BYTES = 16_384
         private const val MAX_CLIENTS = 4
+        private val HEADER_NAME_PATTERN = Regex("[a-z0-9!#$%&'*+.^_`|~-]+")
 
         private fun daemonThread(task: Runnable): Thread =
             Thread(task, "send-to-g2-local-api").apply { isDaemon = true }

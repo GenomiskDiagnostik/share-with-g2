@@ -10,6 +10,8 @@ import kotlinx.serialization.json.Json
 data class ApiRequest(
     val method: String,
     val path: String,
+    val headers: Map<String, String> = emptyMap(),
+    val remoteAddress: String? = null,
 )
 
 data class ApiResponse(
@@ -70,7 +72,7 @@ class LocalApiRouter(
     private fun corsHeaders(): Map<String, String> = mapOf(
         "Access-Control-Allow-Origin" to "*",
         "Access-Control-Allow-Methods" to "GET, OPTIONS",
-        "Access-Control-Allow-Headers" to "Content-Type",
+        "Access-Control-Allow-Headers" to "Content-Type, X-Send-To-G2-Client",
         "Access-Control-Max-Age" to "600",
     )
 

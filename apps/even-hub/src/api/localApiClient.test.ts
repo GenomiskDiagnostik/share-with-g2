@@ -10,6 +10,15 @@ describe('LocalApiClient', () => {
     const client = new LocalApiClient('http://127.0.0.1:8765', fetcher)
 
     await expect(client.health()).resolves.toEqual({ ok: true, version: '0.1.0' })
+    expect(fetcher).toHaveBeenCalledWith(
+      'http://127.0.0.1:8765/health',
+      expect.objectContaining({
+        headers: {
+          Accept: 'application/json',
+          'X-Send-To-G2-Client': 'even-hub',
+        },
+      }),
+    )
   })
 
   it('accepts text and url items', async () => {

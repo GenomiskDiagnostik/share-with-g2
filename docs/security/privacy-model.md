@@ -19,6 +19,10 @@ Send to G2 handles user-shared content that may include private messages, links,
 - Wildcard CORS is temporary for Even Hub WebView feasibility measurement.
 - Do not enable delete/clear endpoints until the WebView origin or an
   authorization mechanism has been validated.
+- Local API diagnostics retain only bounded method, path, client marker,
+  origin, user-agent, loopback address, timestamp, and request count in memory.
+- Never include query strings, request bodies, response bodies, or shared item
+  content in diagnostics.
 - If LAN binding becomes necessary, create a new ADR and add explicit opt-in.
 - Do not use a public cloud relay without encryption, authentication, and opt-in.
 
@@ -70,5 +74,6 @@ after JavaScript execution therefore remain URL-only.
 | Linked page returns a huge response | 1 MiB response cap and 64 KiB stored-text cap |
 | HTML injection | Plain-text extraction only |
 | Sensitive content in logs | No full-content logging |
+| Diagnostics expose shared content | Record bounded transport metadata only, in memory |
 | Accidental cloud exposure | No cloud dependency in v0.1 |
 | Destructive G2 input misfire | Clear UI labels; consider undo/confirmation |
