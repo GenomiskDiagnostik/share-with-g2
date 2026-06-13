@@ -1,6 +1,6 @@
 # Even Hub Shared Inbox App
 
-This directory is reserved for the Even Hub G2 app.
+This directory contains the Even Hub G2 app.
 
 ## Responsibilities
 
@@ -17,14 +17,32 @@ This directory is reserved for the Even Hub G2 app.
 - `@evenrealities/even_hub_sdk`
 - Vitest for logic tests
 
-## First scaffold recommendation
+## Implemented M2 probe
 
-Start from the official/minimal Even Hub template, then add only the reader state machine and API client. Use text-heavy pagination behavior as the model for long content.
+- Official Vite and Even Hub SDK structure.
+- Package ID: `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
+- Network permission limited to `http://127.0.0.1:8765`.
+- Runtime-validated `GET /health` and `GET /items` client.
+- Danish connected and failure states in the companion WebView and G2 text container.
+- Double-tap exits the G2 probe.
+- Vitest coverage for API validation and reachability state.
 
-## First implementation target
+## Commands
 
-1. Hardcoded mocked item renders on simulator.
-2. Empty state renders.
-3. Pagination works.
-4. Fetch `GET /health` and document if it works from simulator/real runtime.
-5. Fetch `GET /items` once transport is proven.
+```bash
+npm install
+npm test
+npm run build
+npm run pack
+```
+
+The local sandbox used for the initial M2 implementation cannot access the npm
+registry. GitHub Actions therefore owns the first dependency install, build,
+test, and `.ehpk` artifact.
+
+## Remaining M2 validation
+
+1. Install the Android debug APK and open it so the local server is running.
+2. Sideload the generated `.ehpk` through Even Hub.
+3. Record whether the production WebView can reach Android loopback.
+4. Record the WebView origin and cleartext behavior before enabling mutations.

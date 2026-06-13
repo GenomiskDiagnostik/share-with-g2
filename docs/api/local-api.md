@@ -16,7 +16,10 @@ This must be treated as an assumption until tested in the target Even Hub runtim
 - Return JSON.
 - Use UTF-8.
 - Do not expose arbitrary file paths or content URI streams.
-- Add CORS headers only as narrowly as needed.
+- M2 temporarily returns wildcard CORS for read-only feasibility testing because
+  the packaged Even Hub WebView origin is not known yet.
+- Replace wildcard CORS or add a local authorization mechanism before mutation
+  endpoints are enabled.
 - Do not add authentication in v0.1 unless the endpoint is exposed beyond loopback.
 
 ## Data type
@@ -70,7 +73,7 @@ Response:
 
 ### GET /items/{id}
 
-Returns one item.
+Planned for M3 after transport and origin validation.
 
 Responses:
 
@@ -79,7 +82,7 @@ Responses:
 
 ### DELETE /items/{id}
 
-Deletes one item.
+Planned for M3 after transport and origin validation.
 
 Responses:
 
@@ -88,11 +91,24 @@ Responses:
 
 ### DELETE /items
 
-Clears all items.
+Planned for M3 after transport and origin validation.
 
 Responses:
 
 - `204` on success.
+
+## Implemented M2 surface
+
+The current Android server implements:
+
+- `GET /health`
+- `GET /items`
+- `OPTIONS`
+- JSON `404` and `405` responses
+
+It rejects mutation methods and binds only to `127.0.0.1`. The server runs for
+the lifetime of the Android application process. This is a feasibility
+lifecycle, not the final background execution design.
 
 ## Future endpoints
 

@@ -42,6 +42,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.genomiskdiagnostik.sendtog2.R
 import io.github.genomiskdiagnostik.sendtog2.SendToG2Application
+import io.github.genomiskdiagnostik.sendtog2.api.LocalApiPhase
+import io.github.genomiskdiagnostik.sendtog2.api.LocalApiState
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
 import java.time.Instant
@@ -67,9 +69,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 val items by viewModel.items.collectAsStateWithLifecycle()
+                val apiState by (application as SendToG2Application)
+                    .localApiServer.state.collectAsStateWithLifecycle()
                 Surface(modifier = Modifier.fillMaxSize()) {
                     InboxScreen(
                         items = items,
+                        apiState = apiState,
                         notificationPermissionGranted = notificationPermissionGranted,
                         onRequestNotificationPermission = ::requestNotificationPermission,
                         onDelete = viewModel::delete,
@@ -102,6 +107,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun InboxScreen(
     items: List<SharedItem>,
+    apiState: LocalApiState,
     notificationPermissionGranted: Boolean,
     onRequestNotificationPermission: () -> Unit,
     onDelete: (String) -> Unit,
@@ -148,6 +154,9 @@ private fun InboxScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+        LocalApiCard(apiState)
+
         if (!notificationPermissionGranted) {
             Spacer(modifier = Modifier.height(16.dp))
             NotificationPermissionCard(onRequestNotificationPermission)
@@ -176,6 +185,41 @@ private fun InboxScreen(
                     SharedItemCard(item = item, onDelete = { onDelete(item.id) })
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LocalApiCard(state: LocalApiState) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.local_api_title),
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = when (state.phase) {
+                    LocalApiPhase.RUNNING -> stringResource(R.string.local_api_running)
+                    LocalApiPhase.STOPPED -> stringResource(R.string.local_api_stopped)
+                    LocalApiPhase.FAILED -> stringResource(R.string.local_api_failed)
+                },
+            )
+            Text(
+                text = state.url,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.local_api_probe_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

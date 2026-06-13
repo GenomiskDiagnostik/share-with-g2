@@ -15,6 +15,10 @@ Send to G2 handles user-shared content that may include private messages, links,
 ## Data transport
 
 - Local HTTP API binds to `127.0.0.1` by default.
+- M2 exposes only read-only health and list endpoints.
+- Wildcard CORS is temporary for Even Hub WebView feasibility measurement.
+- Do not enable delete/clear endpoints until the WebView origin or an
+  authorization mechanism has been validated.
 - If LAN binding becomes necessary, create a new ADR and add explicit opt-in.
 - Do not use a public cloud relay without encryption, authentication, and opt-in.
 
@@ -45,6 +49,7 @@ Send to G2 handles user-shared content that may include private messages, links,
 | Threat | Mitigation |
 |---|---|
 | Other local process reads API | Bind to loopback; avoid LAN; consider random token if needed |
+| Browser page reads M2 API through wildcard CORS | Keep M2 read-only; measure WebView origin; remove wildcard or add authorization before mutations |
 | Malicious source app sends huge payload | Size caps and parser validation |
 | HTML injection | Plain-text extraction only |
 | Sensitive content in logs | No full-content logging |

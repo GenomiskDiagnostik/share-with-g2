@@ -17,6 +17,7 @@ node_modules/
 dist/
 .vite/
 coverage/
+*.ehpk
 
 # OS/editor
 .DS_Store

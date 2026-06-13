@@ -47,10 +47,14 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - Notification channel and permission-aware preview.
 - Danish local inbox with single-item delete and clear-all.
 - Parser, Android intent, and Room repository tests.
+- Read-only local API on `127.0.0.1:8765`.
+- `GET /health`, `GET /items`, and CORS preflight handling.
+- Danish local API diagnostics in the companion app.
+- Router-fake and loopback HTTP tests.
 
 ## Deferred
 
-- Local HTTP API.
 - Foreground service/server lifecycle.
-- Even Hub transport probe.
+- Physical Even Hub loopback and cleartext validation.
+- Local API mutation endpoints.
 - G2 reader UI.

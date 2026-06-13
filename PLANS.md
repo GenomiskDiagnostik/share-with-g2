@@ -2,12 +2,12 @@
 
 ## Current objective
 
-Deliver and validate the Android inbound-share vertical slice before starting
-the local API and Even Hub transport work.
+Prove or disprove Android loopback reachability from the packaged Even Hub
+runtime using a read-only local API and a shippable diagnostic probe.
 
 ## Current phase
 
-Phase 1: Android inbound share vertical slice.
+Phase 2: Local API feasibility slice.
 
 ## Active assumptions
 
@@ -40,7 +40,7 @@ Exit criteria:
 
 ### M1 - Android inbound share vertical slice
 
-Status: active
+Status: automated implementation complete; manual validation pending
 
 Deliverables:
 
@@ -74,16 +74,19 @@ Automated status:
 
 ### M2 - Local API feasibility slice
 
-Status: not started
+Status: active
 
 Deliverables:
 
-- Loopback local HTTP server.
-- `GET /health`.
-- `GET /items`.
-- Minimal Even Hub reachability probe.
+- Loopback local HTTP server. Complete.
+- `GET /health`. Complete.
+- `GET /items`. Complete.
+- Minimal Even Hub reachability probe. Complete.
 - Simulator and physical-device reachability result.
-- CORS and cleartext behavior documented.
+- CORS contract documented; packaged cleartext behavior pending.
+- Android router and real loopback HTTP tests. Complete.
+- Even Hub API validation and reachability tests. Complete.
+- GitHub Actions `.ehpk` artifact. Pending first workflow run.
 
 Exit criteria:
 
@@ -139,16 +142,20 @@ Exit criteria:
 - Generated titles are capped at 80 characters.
 - Notification previews are capped at 160 characters.
 - GitHub Actions publishes debug APK and report artifacts.
+- Even Hub package ID:
+  `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
+- M2 local API is read-only and runs for the Android application process
+  lifetime.
+- M2 wildcard CORS is temporary until the packaged WebView origin is measured.
 
 ## Open decisions
 
-- Even Hub package ID.
 - Whether Even Hub WebView can reach Android loopback.
 - Whether Android needs a foreground service for local server lifetime.
+- How to restrict local API reads before enabling mutation endpoints.
 - Exact G2 confirmation or undo behavior for destructive actions.
 
 ## Immediate next task
 
-Complete the first GitHub Actions run and manual Sharesheet validation for M1.
-Then start M2 with `GET /health` and the smallest possible Even Hub
-reachability probe.
+Run the Android and Even Hub workflows, download the APK and `.ehpk` artifacts,
+then execute the physical-phone reachability script and record the result.

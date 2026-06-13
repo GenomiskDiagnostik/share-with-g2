@@ -24,4 +24,9 @@
     </plurals>
     <string name="type_text">Tekst</string>
     <string name="type_url">Link</string>
+    <string name="local_api_title">Lokal forbindelse</string>
+    <string name="local_api_running">API kører kun på denne telefon</string>
+    <string name="local_api_stopped">API er stoppet</string>
+    <string name="local_api_failed">API kunne ikke starte</string>
+    <string name="local_api_probe_note">Even Hub-adgang skal stadig bekræftes på en fysisk telefon.</string>
 </resources>

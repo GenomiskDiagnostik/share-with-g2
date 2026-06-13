@@ -1,0 +1,21 @@
+{
+  "package_id": "io.github.genomiskdiagnostik.sendtog2.sharedinbox",
+  "edition": "202601",
+  "name": "Send to G2",
+  "version": "0.1.0",
+  "min_app_version": "2.0.0",
+  "min_sdk_version": "0.0.10",
+  "entrypoint": "index.html",
+  "permissions": [
+    {
+      "name": "network",
+      "desc": "Læser den lokale Send to G2-indbakke på telefonen.",
+      "whitelist": [
+        "http://127.0.0.1:8765"
+      ]
+    }
+  ],
+  "supported_languages": [
+    "da"
+  ]
+}
