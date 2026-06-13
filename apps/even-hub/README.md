@@ -23,7 +23,9 @@ This directory contains the Even Hub G2 app.
 - Package ID: `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
 - Network permission limited to `http://127.0.0.1:8765`.
 - Runtime-validated `GET /health` and `GET /items` client.
-- Danish connected and failure states in the companion WebView and G2 text container.
+- Danish and English connected/failure states selected from the WebView locale.
+- Danish remains the MVP UI language. Even Hub package metadata uses `en` as
+  the required fallback because its current language enum has no `da` value.
 - Double-tap exits the G2 probe.
 - Vitest coverage for API validation and reachability state.
 

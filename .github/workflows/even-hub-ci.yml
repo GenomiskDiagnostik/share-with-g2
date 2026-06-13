@@ -40,7 +40,7 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Run unit tests
         run: npm test
@@ -49,7 +49,9 @@ jobs:
         run: npm run build
 
       - name: Package Even Hub app
-        run: npm run pack
+        run: |
+          npm run pack
+          test -s send-to-g2.ehpk
 
       - name: Upload Even Hub package
         uses: actions/upload-artifact@v4

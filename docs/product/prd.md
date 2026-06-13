@@ -64,7 +64,8 @@ For v0.1 only `text` and `url` are persisted as active item types.
 ### Notification
 
 - Create notification channel `shared_to_g2`.
-- Emit notification with title `Delt til G2`.
+- Emit a localized notification title (`Delt til G2` in Danish and
+  `Shared to G2` in English).
 - Use a short preview based on title/text.
 - Respect Android notification permission requirements.
 - Do not assume notification mirroring is enabled; document the dependency on user/device settings.

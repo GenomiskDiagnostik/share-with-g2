@@ -17,7 +17,8 @@ Phase 2: Local API feasibility slice.
 - The MVP handles text and links only.
 - Android notifications provide immediate previews where notification
   permission and Even notification mirroring are enabled.
-- Default user-facing language is Danish.
+- User-facing language follows the Android or Even Hub runtime locale.
+- Danish and English are included; unsupported locales fall back to English.
 
 ## Milestones
 
@@ -147,6 +148,7 @@ Exit criteria:
 - M2 local API is read-only and runs for the Android application process
   lifetime.
 - M2 wildcard CORS is temporary until the packaged WebView origin is measured.
+- Android and Even Hub select Danish or English from the runtime locale.
 
 ## Open decisions
 

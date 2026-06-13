@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Send to G2</string>
+    <string name="notification_channel_name">Delinger til G2</string>
+    <string name="notification_channel_description">Viser korte previews af tekst og links delt til G2.</string>
+    <string name="notification_title">Delt til G2</string>
+    <string name="share_saved">Gemt i G2-indbakken</string>
+    <string name="share_invalid">Delingen indeholder ingen understøttet tekst.</string>
+    <string name="share_too_large">Teksten er for lang til G2-indbakken.</string>
+    <string name="inbox_title">Delt indbakke</string>
+    <string name="empty_inbox">Ingen delte elementer endnu.</string>
+    <string name="notification_permission_title">Tillad notifikationer</string>
+    <string name="notification_permission_body">Notifikationer giver et kort preview, som kan spejles til G2 afhængigt af dine Even-indstillinger.</string>
+    <string name="grant_permission">Tillad</string>
+    <string name="delete_item">Slet</string>
+    <string name="clear_all">Ryd alt</string>
+    <string name="clear_all_title">Ryd hele indbakken?</string>
+    <string name="clear_all_body">Alle delte elementer slettes permanent fra telefonen.</string>
+    <string name="confirm_clear_all">Ryd indbakken</string>
+    <string name="cancel">Annuller</string>
+    <plurals name="item_count">
+        <item quantity="one">%1$d element</item>
+        <item quantity="other">%1$d elementer</item>
+    </plurals>
+    <string name="type_text">Tekst</string>
+    <string name="type_url">Link</string>
+    <string name="local_api_title">Lokal forbindelse</string>
+    <string name="local_api_running">API kører kun på denne telefon</string>
+    <string name="local_api_stopped">API er stoppet</string>
+    <string name="local_api_failed">API kunne ikke starte</string>
+    <string name="local_api_probe_note">Even Hub-adgang skal stadig bekræftes på en fysisk telefon.</string>
+</resources>

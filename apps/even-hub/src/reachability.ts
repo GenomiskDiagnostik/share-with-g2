@@ -3,6 +3,7 @@ import {
   InvalidApiResponseError,
   LocalApiClient,
 } from './api/localApiClient'
+import { getStrings, type SupportedLocale } from './strings'
 
 export type ReachabilityResult =
   | {
@@ -43,30 +44,33 @@ export async function probeLocalApi(
   }
 }
 
-export function describeResult(result: ReachabilityResult): {
+export function describeResult(
+  result: ReachabilityResult,
+  locale: SupportedLocale = 'en',
+): {
   heading: string
   summary: string
   glassText: string
 } {
+  const copy = getStrings(locale)
   if (result.state === 'connected') {
-    const itemLabel = result.itemCount === 1 ? '1 element' : `${result.itemCount} elementer`
     return {
-      heading: 'Lokal API fundet',
-      summary: `${itemLabel} i indbakken. API ${result.version}.`,
-      glassText: `Send to G2\n\nForbundet lokalt\n${itemLabel}\nAPI ${result.version}\n\nDobbelttryk for at lukke`,
+      heading: copy.connectedHeading,
+      summary: copy.connectedSummary(result.itemCount, result.version),
+      glassText: copy.connectedGlass(result.itemCount, result.version),
     }
   }
 
   const explanation = {
-    timeout: 'Forbindelsen fik ikke svar inden for tidsgrænsen.',
-    http: `API'en svarede med HTTP ${result.detail ?? 'fejl'}.`,
-    'invalid-response': 'API-svaret havde et ukendt format.',
-    network: 'WebView’en kunne ikke nå 127.0.0.1:8765.',
+    timeout: copy.failureTimeout,
+    http: copy.failureHttp(result.detail),
+    'invalid-response': copy.failureInvalidResponse,
+    network: copy.failureNetwork,
   }[result.reason]
 
   return {
-    heading: 'Ingen lokal forbindelse',
+    heading: copy.failedHeading,
     summary: explanation,
-    glassText: `Send to G2\n\nIngen lokal forbindelse\n${explanation}\n\nÅbn Android-appen og prøv igen.`,
+    glassText: copy.failedGlass(explanation),
   }
 }

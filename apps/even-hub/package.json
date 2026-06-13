@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pack": "evenhub pack"
+    "pack": "evenhub pack app.json dist -o send-to-g2.ehpk"
   },
   "dependencies": {
     "@evenrealities/even_hub_sdk": "0.0.10"

@@ -50,6 +50,7 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - Read-only local API on `127.0.0.1:8765`.
 - `GET /health`, `GET /items`, and CORS preflight handling.
 - Danish local API diagnostics in the companion app.
+- Danish and English UI selected from the system or per-app language.
 - Router-fake and loopback HTTP tests.
 
 ## Deferred
