@@ -80,13 +80,11 @@ Suggested TypeScript modules:
 ```text
 src/
   main.ts
-  api/client.ts
-  model/sharedItem.ts
-  state/inboxStore.ts
-  render/renderText.ts
-  render/pagination.ts
-  input/eventMap.ts
-  config.ts
+  api/localApiClient.ts
+  inbox/pagination.ts
+  inbox/readerState.ts
+  inbox/renderReader.ts
+  strings.ts
 ```
 
 ### Shared schema
@@ -124,11 +122,18 @@ Intent.EXTRA_TEXT
 ```text
 GET /items
   → SharedItem[]
-  → selectedIndex
+  → ReaderState
   → current item
   → pagination chunks
   → TextContainerUpgrade/content update
 ```
+
+Reader input mapping:
+
+- Click: next item, wrapping to the first item.
+- Scroll up/down: previous/next page, clamped at page boundaries.
+- Double-click: request the SDK safe-exit interaction.
+- Browser controls expose previous/next item and page actions for simulator QA.
 
 ## Local API design
 

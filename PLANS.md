@@ -2,12 +2,12 @@
 
 ## Current objective
 
-Prove or disprove Android loopback reachability from the packaged Even Hub
-runtime using a read-only local API and a shippable diagnostic probe.
+Deliver and validate the read-only Even Hub Shared Inbox reader while physical
+loopback reachability and mutation security remain explicit gates.
 
 ## Current phase
 
-Phase 2: Local API feasibility slice.
+Phase 3: Even Hub Shared Inbox reader slice.
 
 ## Active assumptions
 
@@ -110,16 +110,27 @@ Exit criteria:
 
 ### M3 - Even Hub Shared Inbox vertical slice
 
-Status: not started
+Status: active
 
 Deliverables:
 
-- Even Hub app scaffold.
-- Typed API client.
-- Empty, loading, reader, and API failure states.
-- Pagination and navigation.
+- Even Hub app scaffold. Complete.
+- Typed API client. Complete.
+- Empty, loading, reader, and API failure states. Complete.
+- Pagination and navigation. Complete.
 - Delete current.
 - Clear all with deliberate interaction feedback.
+- Explicit browser/simulator demo mode. Complete.
+- Danish and English reader copy. Complete.
+- Pagination, reader state, rendering, locale, and API tests. Complete locally.
+
+Automated status:
+
+- 18 Even Hub tests pass locally.
+- TypeScript and Vite production build pass locally.
+- `.ehpk` packaging passes locally.
+- Browser validation covers multi-page navigation, item wraparound, disabled
+  controls, localized API failure, and retry.
 
 Exit criteria:
 
@@ -162,6 +173,12 @@ Exit criteria:
   lifetime.
 - M2 wildcard CORS is temporary until the packaged WebView origin is measured.
 - Android and Even Hub select Danish or English from the runtime locale.
+- Reader body pages are capped at 700 characters, preserving paragraph or word
+  boundaries where possible.
+- G2 reader input: click selects the next item, scroll moves pages, and
+  double-click opens the safe exit interaction.
+- Delete and clear remain disabled until transport origin/authorization is
+  validated.
 
 ## Open decisions
 
@@ -172,5 +189,5 @@ Exit criteria:
 
 ## Immediate next task
 
-Download the APK and `.ehpk` artifacts, then execute the physical-phone
-reachability script and record the result.
+Run the updated Even Hub workflow. Then execute the physical-phone reachability
+script before enabling mutations.

@@ -17,6 +17,26 @@ export type AppStrings = {
   failureInvalidResponse: string
   failureNetwork: string
   failedGlass: (explanation: string) => string
+  readerTitle: string
+  readerLoading: string
+  readerEmpty: string
+  readerFailure: Record<'timeout' | 'http' | 'invalid-response' | 'network', string>
+  readerMeta: (
+    item: number,
+    itemCount: number,
+    page: number,
+    pageCount: number,
+    type: string,
+  ) => string
+  readerHelp: string
+  previousItem: string
+  nextItem: string
+  previousPage: string
+  nextPage: string
+  untitled: string
+  typeText: string
+  typeUrl: string
+  demoMode: string
 }
 
 const strings: Record<SupportedLocale, AppStrings> = {
@@ -40,6 +60,26 @@ const strings: Record<SupportedLocale, AppStrings> = {
     failureNetwork: 'WebView’en kunne ikke nå 127.0.0.1:8765.',
     failedGlass: explanation =>
       `Send to G2\n\nIngen lokal forbindelse\n${explanation}\n\nÅbn Android-appen og prøv igen.`,
+    readerTitle: 'Delt indbakke',
+    readerLoading: 'Henter delte elementer...',
+    readerEmpty: 'Ingen delte elementer endnu.',
+    readerFailure: {
+      timeout: 'Den lokale indbakke svarede ikke i tide.',
+      http: 'Den lokale indbakke returnerede en HTTP-fejl.',
+      'invalid-response': 'Den lokale indbakke returnerede ukendte data.',
+      network: 'Kan ikke forbinde til telefonens lokale indbakke.',
+    },
+    readerMeta: (item, itemCount, page, pageCount, type) =>
+      `${item}/${itemCount} · ${type} · side ${page}/${pageCount}`,
+    readerHelp: 'Klik: næste · Scroll: side · Dobbeltklik: luk',
+    previousItem: 'Forrige element',
+    nextItem: 'Næste element',
+    previousPage: 'Forrige side',
+    nextPage: 'Næste side',
+    untitled: 'Uden titel',
+    typeText: 'Tekst',
+    typeUrl: 'Link',
+    demoMode: 'Demo-data',
   },
   en: {
     probeEyebrow: 'M2 · connection test',
@@ -61,6 +101,26 @@ const strings: Record<SupportedLocale, AppStrings> = {
     failureNetwork: 'The WebView could not reach 127.0.0.1:8765.',
     failedGlass: explanation =>
       `Send to G2\n\nNo local connection\n${explanation}\n\nOpen the Android app and try again.`,
+    readerTitle: 'Shared inbox',
+    readerLoading: 'Loading shared items...',
+    readerEmpty: 'No shared items yet.',
+    readerFailure: {
+      timeout: 'The local inbox did not respond before the timeout.',
+      http: 'The local inbox returned an HTTP error.',
+      'invalid-response': 'The local inbox returned unknown data.',
+      network: 'Could not connect to the phone’s local inbox.',
+    },
+    readerMeta: (item, itemCount, page, pageCount, type) =>
+      `${item}/${itemCount} · ${type} · page ${page}/${pageCount}`,
+    readerHelp: 'Click: next · Scroll: page · Double-click: close',
+    previousItem: 'Previous item',
+    nextItem: 'Next item',
+    previousPage: 'Previous page',
+    nextPage: 'Next page',
+    untitled: 'Untitled',
+    typeText: 'Text',
+    typeUrl: 'Link',
+    demoMode: 'Demo data',
   },
 }
 
