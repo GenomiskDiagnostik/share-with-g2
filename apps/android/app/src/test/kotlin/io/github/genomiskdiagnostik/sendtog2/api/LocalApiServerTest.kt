@@ -1,10 +1,13 @@
 package io.github.genomiskdiagnostik.sendtog2.api
 
+import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
+import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
 import java.net.HttpURLConnection
 import java.net.Socket
 import java.net.URI
 import java.net.URL
 import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -116,6 +119,39 @@ class LocalApiServerTest {
 
             assertEquals(LocalApiPhase.RUNNING, server.state.value.phase)
             assertEquals(200, responseCode("${server.state.value.url}/health"))
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
+    fun `server handles delete through loopback http`() {
+        val store = FakeSharedItemStore(
+            listOf(
+                SharedItem(
+                    id = "one",
+                    type = SharedItemType.TEXT,
+                    title = "One",
+                    text = "Text",
+                    sourceApp = null,
+                    createdAt = 100,
+                    read = false,
+                ),
+            ),
+        )
+        val server = LocalApiServer(
+            router = LocalApiRouter(store, "0.1.0-test"),
+            port = 0,
+        )
+
+        try {
+            server.start()
+            val connection = URL("${server.state.value.url}/items/one")
+                .openConnection() as HttpURLConnection
+            connection.requestMethod = "DELETE"
+
+            assertEquals(204, connection.responseCode)
+            assertTrue(runBlocking { store.getAll() }.isEmpty())
         } finally {
             server.stop()
         }

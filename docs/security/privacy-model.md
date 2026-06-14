@@ -20,8 +20,8 @@ Send to G2 handles user-shared content that may include private messages, links,
 - Wildcard CORS is temporary for Even Hub WebView feasibility measurement.
 - The key is stored in Android app-private DataStore and Even Hub local storage.
 - Key rotation invalidates the previous Even Hub pairing.
-- Do not enable delete/clear endpoints until the authenticated flow has also
-  been validated in the packaged WebView.
+- Delete/clear require the same Bearer key as reads and a separate phone-side
+  confirmation. Packaged WebView validation remains a release gate.
 - Local API diagnostics retain only bounded method, path, client marker,
   origin, user-agent, loopback address, timestamp, and request count in memory.
 - Never include query strings, request bodies, response bodies, or shared item
@@ -80,4 +80,4 @@ after JavaScript execution therefore remain URL-only.
 | Sensitive content in logs | No full-content logging |
 | Diagnostics expose shared content | Record bounded transport metadata only, in memory |
 | Accidental cloud exposure | No cloud dependency in v0.1 |
-| Destructive G2 input misfire | Clear UI labels; consider undo/confirmation |
+| Destructive G2 input misfire | G2 gestures cannot mutate; phone WebView requires explicit confirmation |

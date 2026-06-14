@@ -54,6 +54,34 @@ describe('reader state', () => {
     }
     expect(next).toMatchObject({ pageIndex: 2 })
   })
+
+  it('deletes the current item and keeps a valid selection', () => {
+    const state: ReaderState = {
+      status: 'ready',
+      items: [item('one'), item('two'), item('three')],
+      selectedIndex: 2,
+      pageIndex: 1,
+    }
+
+    const next = reduceReader(state, { type: 'delete-current' })
+
+    expect(next).toMatchObject({ selectedIndex: 1, pageIndex: 0 })
+    expect(getCurrentItem(next)?.id).toBe('two')
+  })
+
+  it('maps deleting the final item and clearing to empty', () => {
+    const state: ReaderState = {
+      status: 'ready',
+      items: [item('one')],
+      selectedIndex: 0,
+      pageIndex: 0,
+    }
+
+    expect(reduceReader(state, { type: 'delete-current' }))
+      .toEqual({ status: 'empty' })
+    expect(reduceReader(state, { type: 'clear' }))
+      .toEqual({ status: 'empty' })
+  })
 })
 
 function item(id: string, text = `Text for ${id}`): SharedItem {

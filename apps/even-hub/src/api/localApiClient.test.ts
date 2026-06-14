@@ -83,6 +83,35 @@ describe('LocalApiClient', () => {
       }),
     )
   })
+
+  it('deletes one item and clears all with authenticated requests', async () => {
+    const fetcher = vi.fn(async () => new Response(null, { status: 204 }))
+    const client = new LocalApiClient(
+      'http://127.0.0.1:8765',
+      fetcher,
+      3_000,
+      'private-key',
+    )
+
+    await client.deleteItem('item with spaces')
+    await client.clearItems()
+
+    expect(fetcher).toHaveBeenNthCalledWith(
+      1,
+      'http://127.0.0.1:8765/items/item%20with%20spaces',
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer private-key',
+        }),
+      }),
+    )
+    expect(fetcher).toHaveBeenNthCalledWith(
+      2,
+      'http://127.0.0.1:8765/items',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
 })
 
 function jsonResponse(value: unknown): Response {

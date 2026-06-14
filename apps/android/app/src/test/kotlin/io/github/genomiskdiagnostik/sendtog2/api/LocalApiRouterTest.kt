@@ -19,6 +19,10 @@ class LocalApiRouterTest {
         assertEquals(200, response.status)
         assertEquals("*", response.headers["Access-Control-Allow-Origin"])
         assertEquals(
+            "GET, DELETE, OPTIONS",
+            response.headers["Access-Control-Allow-Methods"],
+        )
+        assertEquals(
             "Authorization, Content-Type, X-Send-To-G2-Client",
             response.headers["Access-Control-Allow-Headers"],
         )
@@ -43,11 +47,11 @@ class LocalApiRouterTest {
     }
 
     @Test
-    fun `mutating methods are rejected`() = runBlocking {
-        val response = router().route(ApiRequest("DELETE", "/items"))
+    fun `unsupported methods are rejected`() = runBlocking {
+        val response = router().route(ApiRequest("POST", "/items"))
 
         assertEquals(405, response.status)
-        assertEquals("GET, OPTIONS", response.headers["Allow"])
+        assertEquals("GET, DELETE, OPTIONS", response.headers["Allow"])
     }
 
     @Test
@@ -78,6 +82,45 @@ class LocalApiRouterTest {
         assertEquals(200, response.status)
         assertEquals("one", json(response.body)["id"]?.jsonPrimitive?.content)
         assertEquals(404, router(store).route(ApiRequest("GET", "/items/missing")).status)
+    }
+
+    @Test
+    fun `delete item removes only the selected item`() = runBlocking {
+        val store = FakeSharedItemStore(
+            listOf(item("one", 200, "One"), item("two", 100, "Two")),
+        )
+
+        val response = router(store).route(ApiRequest("DELETE", "/items/one"))
+
+        assertEquals(204, response.status)
+        assertEquals("", response.body)
+        assertEquals(listOf("two"), store.getAll().map(SharedItem::id))
+        assertEquals(404, router(store).route(ApiRequest("DELETE", "/items/one")).status)
+    }
+
+    @Test
+    fun `clear items empties the repository`() = runBlocking {
+        val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
+
+        val response = router(store).route(ApiRequest("DELETE", "/items"))
+
+        assertEquals(204, response.status)
+        assertEquals(emptyList<SharedItem>(), store.getAll())
+    }
+
+    @Test
+    fun `unauthorized delete leaves repository unchanged`() = runBlocking {
+        val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
+        val router = LocalApiRouter(
+            store = store,
+            version = "0.1.0-test",
+            authorizer = LocalApiAuthorizer { false },
+        )
+
+        val response = router.route(ApiRequest("DELETE", "/items/one"))
+
+        assertEquals(401, response.status)
+        assertEquals(listOf("one"), store.getAll().map(SharedItem::id))
     }
 
     @Test

@@ -35,11 +35,11 @@ class LocalApiRouter(
             return ApiResponse(status = 204, headers = corsHeaders())
         }
 
-        if (request.method != "GET") {
+        if (request.method !in SUPPORTED_METHODS) {
             return jsonResponse(
                 status = 405,
                 value = ErrorDto("method_not_allowed"),
-                extraHeaders = mapOf("Allow" to "GET, OPTIONS"),
+                extraHeaders = mapOf("Allow" to "GET, DELETE, OPTIONS"),
             )
         }
 
@@ -53,32 +53,67 @@ class LocalApiRouter(
             )
         }
 
+        if (request.path == "/health") {
+            return if (request.method == "GET") {
+                jsonResponse(
+                    status = 200,
+                    value = HealthDto(ok = true, version = version),
+                )
+            } else {
+                jsonResponse(
+                    status = 405,
+                    value = ErrorDto("method_not_allowed"),
+                    extraHeaders = mapOf("Allow" to "GET, OPTIONS"),
+                )
+            }
+        }
+
         return when (request.path) {
-            "/health" -> jsonResponse(
-                status = 200,
-                value = HealthDto(ok = true, version = version),
-            )
+            "/items" -> routeItems(request.method)
 
-            "/items" -> jsonResponse(
-                status = 200,
-                value = store.getAll().map(SharedItem::toDto),
-            )
-
-            else -> routeItem(request.path)
+            else -> routeItem(request.method, request.path)
         }
     }
 
-    private suspend fun routeItem(path: String): ApiResponse {
+    private suspend fun routeItems(method: String): ApiResponse = when (method) {
+        "GET" -> jsonResponse(
+            status = 200,
+            value = store.getAll().map(SharedItem::toDto),
+        )
+
+        "DELETE" -> {
+            store.clearAll()
+            ApiResponse(status = 204, headers = corsHeaders())
+        }
+
+        else -> error("Unsupported method passed routing guard")
+    }
+
+    private suspend fun routeItem(method: String, path: String): ApiResponse {
         val id = path.removePrefix(ITEM_PATH_PREFIX)
         if (!path.startsWith(ITEM_PATH_PREFIX) || id.isBlank() || '/' in id) {
             return jsonResponse(status = 404, value = ErrorDto("not_found"))
         }
 
-        val item = store.getById(id)
-        return if (item == null) {
-            jsonResponse(status = 404, value = ErrorDto("not_found"))
-        } else {
-            jsonResponse(status = 200, value = item.toDto())
+        return when (method) {
+            "GET" -> {
+                val item = store.getById(id)
+                if (item == null) {
+                    jsonResponse(status = 404, value = ErrorDto("not_found"))
+                } else {
+                    jsonResponse(status = 200, value = item.toDto())
+                }
+            }
+
+            "DELETE" -> {
+                if (store.deleteById(id)) {
+                    ApiResponse(status = 204, headers = corsHeaders())
+                } else {
+                    jsonResponse(status = 404, value = ErrorDto("not_found"))
+                }
+            }
+
+            else -> error("Unsupported method passed routing guard")
         }
     }
 
@@ -96,7 +131,7 @@ class LocalApiRouter(
 
     private fun corsHeaders(): Map<String, String> = mapOf(
         "Access-Control-Allow-Origin" to "*",
-        "Access-Control-Allow-Methods" to "GET, OPTIONS",
+        "Access-Control-Allow-Methods" to "GET, DELETE, OPTIONS",
         "Access-Control-Allow-Headers" to
             "Authorization, Content-Type, X-Send-To-G2-Client",
         "Access-Control-Max-Age" to "600",
@@ -105,6 +140,7 @@ class LocalApiRouter(
     companion object {
         const val API_VERSION = "0.1.0"
         private const val ITEM_PATH_PREFIX = "/items/"
+        private val SUPPORTED_METHODS = setOf("GET", "DELETE")
     }
 }
 

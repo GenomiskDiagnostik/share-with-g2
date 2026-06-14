@@ -26,6 +26,8 @@ This directory contains the Even Hub G2 app.
 - Local pairing form shown when the Android API returns `401`.
 - Access key persistence in WebView local storage and Bearer authorization for
   inbox reads.
+- Phone-side delete-current and clear-all controls with explicit confirmation.
+- Immediate reader updates after successful authenticated mutations.
 - Explicit `X-Send-To-G2-Client: even-hub` marker so Android can distinguish a
   packaged Even Hub request from its own self-test.
 - Loading, empty, failure, and ready reader states.
@@ -62,8 +64,8 @@ repeats the test, build, and packaging steps and publishes the reviewable
 3. Record whether the production WebView can reach Android loopback.
 4. Copy the Android pairing key into Even Hub and confirm an authenticated
    inbox read.
-5. Open Android diagnostics and record the WebView origin, user-agent, and
-   cleartext behavior before enabling mutations.
+5. Open Android diagnostics and record the WebView origin, user-agent,
+   cleartext behavior, and authenticated mutation result before release.
 
-Delete-current and clear-all remain intentionally deferred until that security
-gate is complete.
+Delete-current and clear-all are implemented, but their packaged WebView flow
+remains a release acceptance gate.

@@ -41,6 +41,17 @@ export type AppStrings = {
   nextItem: string
   previousPage: string
   nextPage: string
+  deleteCurrent: string
+  clearAll: string
+  mutationCancel: string
+  mutationConfirmDelete: string
+  mutationConfirmClear: string
+  mutationDeleteTitle: string
+  mutationDeleteBody: (title: string) => string
+  mutationClearTitle: string
+  mutationClearBody: string
+  mutationWorking: string
+  mutationFailure: string
   untitled: string
   typeText: string
   typeUrl: string
@@ -90,6 +101,17 @@ const strings: Record<SupportedLocale, AppStrings> = {
     nextItem: 'Næste element',
     previousPage: 'Forrige side',
     nextPage: 'Næste side',
+    deleteCurrent: 'Slet element',
+    clearAll: 'Ryd alt',
+    mutationCancel: 'Annuller',
+    mutationConfirmDelete: 'Slet element',
+    mutationConfirmClear: 'Ryd indbakke',
+    mutationDeleteTitle: 'Slet dette element?',
+    mutationDeleteBody: title => `“${title}” slettes permanent fra telefonen.`,
+    mutationClearTitle: 'Ryd hele indbakken?',
+    mutationClearBody: 'Alle delte elementer slettes permanent fra telefonen.',
+    mutationWorking: 'Arbejder…',
+    mutationFailure: 'Handlingen kunne ikke gennemføres. Prøv igen.',
     untitled: 'Uden titel',
     typeText: 'Tekst',
     typeUrl: 'Link',
@@ -137,6 +159,17 @@ const strings: Record<SupportedLocale, AppStrings> = {
     nextItem: 'Next item',
     previousPage: 'Previous page',
     nextPage: 'Next page',
+    deleteCurrent: 'Delete item',
+    clearAll: 'Clear all',
+    mutationCancel: 'Cancel',
+    mutationConfirmDelete: 'Delete item',
+    mutationConfirmClear: 'Clear inbox',
+    mutationDeleteTitle: 'Delete this item?',
+    mutationDeleteBody: title => `“${title}” will be permanently deleted from the phone.`,
+    mutationClearTitle: 'Clear the entire inbox?',
+    mutationClearBody: 'All shared items will be permanently deleted from the phone.',
+    mutationWorking: 'Working…',
+    mutationFailure: 'The action could not be completed. Try again.',
     untitled: 'Untitled',
     typeText: 'Text',
     typeUrl: 'Link',

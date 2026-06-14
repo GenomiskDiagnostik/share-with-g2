@@ -19,10 +19,12 @@ export type ReaderAction =
   | { type: 'previous-item' }
   | { type: 'next-page' }
   | { type: 'previous-page' }
+  | { type: 'delete-current' }
+  | { type: 'clear' }
 
 export type ReaderNavigationAction = Exclude<
   ReaderAction,
-  { type: 'load' } | { type: 'fail' }
+  { type: 'load' } | { type: 'fail' } | { type: 'delete-current' } | { type: 'clear' }
 >
 
 export type ReaderFailureReason =
@@ -52,6 +54,19 @@ export function reduceReader(
   }
 
   if (state.status !== 'ready') return state
+
+  if (action.type === 'clear') return { status: 'empty' }
+
+  if (action.type === 'delete-current') {
+    const items = state.items.filter((_, index) => index !== state.selectedIndex)
+    if (items.length === 0) return { status: 'empty' }
+    return {
+      status: 'ready',
+      items,
+      selectedIndex: Math.min(state.selectedIndex, items.length - 1),
+      pageIndex: 0,
+    }
+  }
 
   if (action.type === 'next-item') {
     return {

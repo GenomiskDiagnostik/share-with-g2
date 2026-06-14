@@ -16,7 +16,7 @@ This must be treated as an assumption until tested in the target Even Hub runtim
 - Return JSON.
 - Use UTF-8.
 - Do not expose arbitrary file paths or content URI streams.
-- M2 temporarily returns wildcard CORS for read-only feasibility testing because
+- M2 introduced wildcard CORS for origin feasibility testing because
   the packaged Even Hub WebView origin is not known yet.
 - `/health` remains unauthenticated so transport failures can be distinguished
   from pairing failures.
@@ -84,7 +84,7 @@ Responses:
 
 ### DELETE /items/{id}
 
-Planned for M3. It will require the same Bearer access key.
+Deletes one item. Requires the Bearer access key.
 
 Responses:
 
@@ -93,25 +93,27 @@ Responses:
 
 ### DELETE /items
 
-Planned for M3. It will require the same Bearer access key.
+Deletes every item. Requires the Bearer access key.
 
 Responses:
 
 - `204` on success.
 
-## Implemented M2 surface
+## Implemented surface
 
 The current Android server implements:
 
 - `GET /health`
 - `GET /items`
 - `GET /items/{id}`
+- `DELETE /items/{id}`
+- `DELETE /items`
 - `OPTIONS`
 - JSON `401`, `404`, and `405` responses
 
-It rejects mutation methods and binds only to `127.0.0.1`. The server runs for
-the lifetime of the Android application process. This is a feasibility
-lifecycle, not the final background execution design.
+It binds only to `127.0.0.1`. The server runs for the lifetime of the Android
+application process. This is a feasibility lifecycle, not the final background
+execution design.
 
 ## Pairing contract
 
@@ -124,6 +126,15 @@ lifecycle, not the final background execution design.
 6. Rotating the key immediately invalidates the previous pairing.
 
 The key must never appear in API diagnostics, logs, URLs, or query strings.
+
+## Mutation interaction contract
+
+- Even Hub exposes delete-current and clear-all on its phone WebView only.
+- Each mutation requires a separate confirmation step.
+- G2 click, scroll, and double-click gestures never trigger deletion.
+- A successful mutation updates the local reader state immediately.
+- A `401` returns the reader to pairing; other failures preserve the current
+  reader item and show a retryable error.
 
 ## Future endpoints
 

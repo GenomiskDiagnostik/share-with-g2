@@ -34,7 +34,7 @@ Expected:
 9. Open without demo mode while the Android API is stopped.
 10. Confirm the localized error state offers a working retry action.
 
-## Live Read-Only Flow
+## Live Flow
 
 1. Start the Android companion app.
 2. Share at least two text/link items.
@@ -43,6 +43,14 @@ Expected:
 5. Confirm long content paginates.
 6. Confirm click advances items and scroll changes pages on G2.
 7. Confirm double-click shows the SDK exit interaction.
+8. In the phone WebView, choose delete-current and cancel the confirmation.
+9. Repeat, confirm deletion, and verify only the selected item disappears from
+   Android and Even Hub.
+10. Choose clear-all, cancel once, then confirm and verify both surfaces become
+    empty.
+11. Rotate the Android access key and confirm a mutation returns to pairing.
+12. Confirm no G2 click, scroll, or double-click gesture opens a destructive
+    confirmation or mutates the inbox.
 
-Do not enable delete or clear-all during this validation. Those actions remain
-blocked until loopback origin or local authorization behavior is documented.
+Do not treat mutations as release-ready until the packaged WebView completes
+the authenticated validation above.

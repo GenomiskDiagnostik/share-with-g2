@@ -27,8 +27,7 @@ security controls.
 - Compare presented tokens in constant time.
 - Never include the key in diagnostics, logs, URLs, query strings, analytics,
   or error messages.
-- Keep mutation methods disabled until this pairing flow and loopback
-  reachability are validated in the packaged Even Hub runtime.
+- Mutation safety and interaction behavior are amended by ADR-008.
 
 ## Consequences
 

@@ -12,6 +12,7 @@ import {
 } from './api/localApiClient'
 import { loadAccessKey, saveAccessKey } from './auth/accessKey'
 import {
+  getCurrentItem,
   reduceReader,
   type ReaderAction,
   type ReaderNavigationAction,
@@ -24,6 +25,7 @@ import './style.css'
 
 const CONTAINER_ID = 1
 const CONTAINER_NAME = 'sharedInbox'
+type MutationAction = 'delete-current' | 'clear'
 
 async function main() {
   const root = document.querySelector<HTMLElement>('#app')
@@ -36,6 +38,7 @@ async function main() {
 
   let state: ReaderState = { status: 'loading' }
   let bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>> | undefined
+  let client: LocalApiClient | undefined
 
   const render = async () => {
     const view = renderReader(state, locale)
@@ -58,7 +61,29 @@ async function main() {
     await render()
   }
 
-  bindWebActions(root, dispatch, strings)
+  const mutate = async (
+    action: MutationAction,
+  ): Promise<ReaderFailureReason | undefined> => {
+    if (state.status !== 'ready') return undefined
+    const currentItem = getCurrentItem(state)
+    if (!currentItem) return undefined
+    try {
+      if (!demoMode) {
+        if (!client) return 'network'
+        if (action === 'delete-current') {
+          await client.deleteItem(currentItem.id)
+        } else {
+          await client.clearItems()
+        }
+      }
+      await dispatch({ type: action })
+      return undefined
+    } catch (error) {
+      return classifyFailure(error)
+    }
+  }
+
+  bindWebActions(root, dispatch, strings, () => state, mutate)
   renderWeb(
     root,
     renderReader(state, locale),
@@ -99,7 +124,7 @@ async function main() {
     return
   }
 
-  const client = new LocalApiClient(
+  client = new LocalApiClient(
     undefined,
     undefined,
     undefined,
@@ -129,6 +154,7 @@ function renderWeb(
       <h1 id="reader-heading"></h1>
       <div class="reader-body" id="reader-body"></div>
       <p class="reader-help" id="reader-help"></p>
+      <p class="mutation-status" id="mutation-status" role="status"></p>
       <form class="pairing-form" data-pairing-form hidden>
         <label for="access-key" id="pairing-label"></label>
         <input
@@ -151,7 +177,21 @@ function renderWeb(
         <button type="button" data-action="next-item" id="next-item"></button>
         <button type="button" data-reload id="retry" hidden></button>
       </div>
+      <div class="mutation-actions" id="mutation-actions" hidden>
+        <button type="button" class="danger-secondary" data-mutation="delete-current" id="delete-current"></button>
+        <button type="button" class="danger" data-mutation="clear" id="clear-all"></button>
+      </div>
     </section>
+    <div class="confirmation-backdrop" id="confirmation-backdrop" hidden>
+      <section class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmation-title">
+        <h2 id="confirmation-title"></h2>
+        <p id="confirmation-body"></p>
+        <div class="confirmation-actions">
+          <button type="button" class="danger" data-confirm-mutation id="confirmation-confirm"></button>
+          <button type="button" data-cancel-mutation id="confirmation-cancel"></button>
+        </div>
+      </section>
+    </div>
   `
 
   setText(root, '#reader-eyebrow', view.eyebrow)
@@ -167,9 +207,14 @@ function renderWeb(
   setText(root, '#pairing-label', strings.pairingLabel)
   setText(root, '#pairing-help', strings.pairingHelp)
   setText(root, '#pairing-save', strings.pairingSave)
+  setText(root, '#delete-current', strings.deleteCurrent)
+  setText(root, '#clear-all', strings.clearAll)
+  setText(root, '#confirmation-cancel', strings.mutationCancel)
 
   const pairingForm = root.querySelector<HTMLFormElement>('[data-pairing-form]')
   if (pairingForm) pairingForm.hidden = !view.needsPairing
+  const mutationActions = root.querySelector<HTMLElement>('#mutation-actions')
+  if (mutationActions) mutationActions.hidden = view.status !== 'ready'
 
   const badgeElement = root.querySelector<HTMLElement>('#mode-badge')
   if (badge && badgeElement) {
@@ -194,6 +239,8 @@ function bindWebActions(
   root: HTMLElement,
   dispatch: (action: ReaderAction) => Promise<void>,
   strings: ReturnType<typeof getStrings>,
+  getState: () => ReaderState,
+  mutate: (action: MutationAction) => Promise<ReaderFailureReason | undefined>,
 ) {
   root.addEventListener('submit', event => {
     const form = (event.target as HTMLElement).closest<HTMLFormElement>(
@@ -213,6 +260,51 @@ function bindWebActions(
   })
 
   root.addEventListener('click', event => {
+    const cancelMutation = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      '[data-cancel-mutation]',
+    )
+    if (cancelMutation) {
+      closeMutationConfirmation(root)
+      return
+    }
+
+    const confirmMutation = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      '[data-confirm-mutation]',
+    )
+    if (confirmMutation) {
+      const pending = root.dataset.pendingMutation
+      if (pending !== 'delete-current' && pending !== 'clear') return
+      confirmMutation.disabled = true
+      confirmMutation.textContent = strings.mutationWorking
+      const cancel = root.querySelector<HTMLButtonElement>('[data-cancel-mutation]')
+      if (cancel) cancel.disabled = true
+      void mutate(pending).then(async failure => {
+        if (!failure) return
+        closeMutationConfirmation(root)
+        if (failure === 'unauthorized') {
+          await dispatch({ type: 'fail', reason: failure })
+          return
+        }
+        setText(root, '#mutation-status', strings.mutationFailure)
+      })
+      return
+    }
+
+    const mutationButton = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-mutation]',
+    )
+    if (mutationButton) {
+      const action = mutationButton.dataset.mutation
+      if (action !== 'delete-current' && action !== 'clear') return
+      const state = getState()
+      if (state.status !== 'ready') return
+      const item = getCurrentItem(state)
+      if (!item) return
+      const title = item.title?.trim() || strings.untitled
+      openMutationConfirmation(root, strings, action, title)
+      return
+    }
+
     const reloadButton = (event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-reload]',
     )
@@ -229,6 +321,49 @@ function bindWebActions(
     if (!isNavigationAction(type)) return
     void dispatch({ type })
   })
+}
+
+function openMutationConfirmation(
+  root: HTMLElement,
+  strings: ReturnType<typeof getStrings>,
+  action: MutationAction,
+  itemTitle: string,
+) {
+  root.dataset.pendingMutation = action
+  setText(
+    root,
+    '#confirmation-title',
+    action === 'delete-current'
+      ? strings.mutationDeleteTitle
+      : strings.mutationClearTitle,
+  )
+  setText(
+    root,
+    '#confirmation-body',
+    action === 'delete-current'
+      ? strings.mutationDeleteBody(itemTitle)
+      : strings.mutationClearBody,
+  )
+  setText(
+    root,
+    '#confirmation-confirm',
+    action === 'delete-current'
+      ? strings.mutationConfirmDelete
+      : strings.mutationConfirmClear,
+  )
+  const confirm = root.querySelector<HTMLButtonElement>('#confirmation-confirm')
+  if (confirm) confirm.disabled = false
+  const cancel = root.querySelector<HTMLButtonElement>('[data-cancel-mutation]')
+  if (cancel) cancel.disabled = false
+  const backdrop = root.querySelector<HTMLElement>('#confirmation-backdrop')
+  if (backdrop) backdrop.hidden = false
+  confirm?.focus()
+}
+
+function closeMutationConfirmation(root: HTMLElement) {
+  delete root.dataset.pendingMutation
+  const backdrop = root.querySelector<HTMLElement>('#confirmation-backdrop')
+  if (backdrop) backdrop.hidden = true
 }
 
 function isNavigationAction(

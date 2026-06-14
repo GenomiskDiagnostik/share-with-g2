@@ -29,16 +29,28 @@ export class LocalApiClient {
   ) {}
 
   async health(): Promise<HealthResponse> {
-    return parseHealth(await this.get('/health', false))
+    return parseHealth(await this.request('GET', '/health', false))
   }
 
   async items(): Promise<SharedItem[]> {
-    const value: unknown = await this.get('/items', true)
+    const value: unknown = await this.request('GET', '/items', true)
     if (!Array.isArray(value)) throw new InvalidApiResponseError()
     return value.map(parseSharedItem)
   }
 
-  private async get(path: string, authenticated: boolean): Promise<unknown> {
+  async deleteItem(id: string): Promise<void> {
+    await this.request('DELETE', `/items/${encodeURIComponent(id)}`, true)
+  }
+
+  async clearItems(): Promise<void> {
+    await this.request('DELETE', '/items', true)
+  }
+
+  private async request(
+    method: 'GET' | 'DELETE',
+    path: string,
+    authenticated: boolean,
+  ): Promise<unknown> {
     const controller = new AbortController()
     const timeout = globalThis.setTimeout(() => controller.abort(), this.timeoutMs)
     try {
@@ -50,11 +62,12 @@ export class LocalApiClient {
         headers.Authorization = `Bearer ${this.accessKey}`
       }
       const response = await this.fetcher(`${this.baseUrl}${path}`, {
-        method: 'GET',
+        method,
         headers,
         signal: controller.signal,
       })
       if (!response.ok) throw new ApiStatusError(response.status)
+      if (response.status === 204) return undefined
       return await response.json() as unknown
     } finally {
       globalThis.clearTimeout(timeout)
