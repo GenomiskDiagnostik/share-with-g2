@@ -34,6 +34,9 @@ interface SharedItemDao {
         text: String,
     ): Int
 
+    @Query("UPDATE shared_items SET read = :read WHERE id = :id")
+    suspend fun updateRead(id: String, read: Boolean): Int
+
     @Query("DELETE FROM shared_items WHERE id = :id")
     suspend fun deleteById(id: String): Int
 

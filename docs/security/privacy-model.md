@@ -22,6 +22,8 @@ Send to G2 handles user-shared content that may include private messages, links,
 - Key rotation invalidates the previous Even Hub pairing.
 - Delete/clear require the same Bearer key as reads and a separate phone-side
   confirmation. Packaged WebView validation remains a release gate.
+- Read/unread updates require the same Bearer key as reads but are
+  non-destructive and do not require confirmation.
 - Local API diagnostics retain only bounded method, path, client marker,
   origin, user-agent, loopback address, timestamp, and request count in memory.
 - Never include query strings, request bodies, response bodies, or shared item
@@ -81,3 +83,4 @@ after JavaScript execution therefore remain URL-only.
 | Diagnostics expose shared content | Record bounded transport metadata only, in memory |
 | Accidental cloud exposure | No cloud dependency in v0.1 |
 | Destructive G2 input misfire | G2 gestures cannot mutate; phone WebView requires explicit confirmation |
+| Read-state drift between surfaces | Even Hub periodically refreshes from Android, which remains the source of truth |

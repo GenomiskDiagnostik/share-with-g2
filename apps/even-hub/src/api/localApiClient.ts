@@ -46,10 +46,20 @@ export class LocalApiClient {
     await this.request('DELETE', '/items', true)
   }
 
+  async updateRead(id: string, read: boolean): Promise<SharedItem> {
+    return parseSharedItem(await this.request(
+      'PATCH',
+      `/items/${encodeURIComponent(id)}`,
+      true,
+      { read },
+    ))
+  }
+
   private async request(
-    method: 'GET' | 'DELETE',
+    method: 'GET' | 'PATCH' | 'DELETE',
     path: string,
     authenticated: boolean,
+    body?: unknown,
   ): Promise<unknown> {
     const controller = new AbortController()
     const timeout = globalThis.setTimeout(() => controller.abort(), this.timeoutMs)
@@ -61,9 +71,13 @@ export class LocalApiClient {
       if (authenticated && this.accessKey) {
         headers.Authorization = `Bearer ${this.accessKey}`
       }
+      if (body !== undefined) {
+        headers['Content-Type'] = 'application/json'
+      }
       const response = await this.fetcher(`${this.baseUrl}${path}`, {
         method,
         headers,
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         signal: controller.signal,
       })
       if (!response.ok) throw new ApiStatusError(response.status)

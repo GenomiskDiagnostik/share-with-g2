@@ -169,11 +169,30 @@ class LocalApiServer(
 
         val path = parts[1].substringBefore('?')
         if (!path.startsWith('/')) throw InvalidRequestException()
+        val body = readBody(input, headers)
         return ApiRequest(
             method = parts[0].uppercase(Locale.ROOT),
             path = path,
             headers = headers,
+            body = body,
         )
+    }
+
+    private fun readBody(
+        input: BufferedInputStream,
+        headers: Map<String, String>,
+    ): String {
+        val lengthValue = headers["content-length"] ?: return ""
+        val length = lengthValue.toIntOrNull() ?: throw InvalidRequestException()
+        if (length < 0 || length > MAX_BODY_BYTES) throw InvalidRequestException()
+        val bytes = ByteArray(length)
+        var offset = 0
+        while (offset < length) {
+            val read = input.read(bytes, offset, length - offset)
+            if (read == -1) throw InvalidRequestException()
+            offset += read
+        }
+        return bytes.toString(StandardCharsets.UTF_8)
     }
 
     private fun readLine(input: BufferedInputStream, maxBytes: Int): String {
@@ -228,6 +247,7 @@ class LocalApiServer(
         private const val MAX_REQUEST_LINE_BYTES = 4_096
         private const val MAX_HEADER_LINE_BYTES = 8_192
         private const val MAX_HEADER_BYTES = 16_384
+        private const val MAX_BODY_BYTES = 4_096
         private const val MAX_CLIENTS = 4
         private val HEADER_NAME_PATTERN = Regex("[a-z0-9!#$%&'*+.^_`|~-]+")
 

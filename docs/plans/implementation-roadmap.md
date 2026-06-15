@@ -83,12 +83,14 @@ Tasks:
 - Add explicit notification permission handling.
 - Add local API lifecycle handling.
 - Add error states for API unavailable/no permission/no items.
+- Add live Even Hub refresh and read/unread reconciliation.
 - Add manual E2E checklist.
 - Add release notes.
 
 Acceptance:
 
 - Complete flow works from Android share to G2 reader.
+- New shared items appear without restarting Even Hub.
 - Known limitations are documented.
 - No cloud service required.
 
@@ -99,6 +101,7 @@ Candidates:
 - Image metadata and optional thumbnail rendering.
 - PDF metadata and first-page text extraction.
 - Favorites/pin.
+- Read/unread filtering.
 - Search/history filters.
 - Auto-expire after 7/30 days.
 - Manual compose/send-to-G2 screen.

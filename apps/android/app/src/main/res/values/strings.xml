@@ -14,6 +14,10 @@
     <string name="notification_permission_body">Notifications provide a short preview that may be mirrored to G2 depending on your Even settings.</string>
     <string name="grant_permission">Allow</string>
     <string name="delete_item">Delete</string>
+    <string name="mark_read">Mark read</string>
+    <string name="mark_unread">Mark unread</string>
+    <string name="read_state_read">read</string>
+    <string name="read_state_unread">unread</string>
     <string name="clear_all">Clear all</string>
     <string name="clear_all_title">Clear the entire inbox?</string>
     <string name="clear_all_body">All shared items will be permanently deleted from the phone.</string>

@@ -36,6 +36,19 @@ class FakeSharedItemStore(
         return true
     }
 
+    override suspend fun updateRead(id: String, read: Boolean): Boolean {
+        var updated = false
+        values.value = values.value.map { item ->
+            if (item.id == id) {
+                updated = true
+                item.copy(read = read)
+            } else {
+                item
+            }
+        }
+        return updated
+    }
+
     override suspend fun deleteById(id: String): Boolean {
         val original = values.value
         values.value = original.filterNot { it.id == id }

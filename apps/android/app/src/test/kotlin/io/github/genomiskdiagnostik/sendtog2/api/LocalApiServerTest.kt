@@ -157,6 +157,55 @@ class LocalApiServerTest {
         }
     }
 
+    @Test
+    fun `server handles patch body through loopback http`() {
+        val store = FakeSharedItemStore(
+            listOf(
+                SharedItem(
+                    id = "one",
+                    type = SharedItemType.TEXT,
+                    title = "One",
+                    text = "Text",
+                    sourceApp = null,
+                    createdAt = 100,
+                    read = false,
+                ),
+            ),
+        )
+        val server = LocalApiServer(
+            router = LocalApiRouter(store, "0.1.0-test"),
+            port = 0,
+        )
+
+        try {
+            server.start()
+            val endpoint = URI(server.state.value.url)
+            Socket(endpoint.host, endpoint.port).use { socket ->
+                val body = """{"read":true}"""
+                val request = buildString {
+                    append("PATCH /items/one HTTP/1.1\r\n")
+                    append("Host: ${endpoint.host}:${endpoint.port}\r\n")
+                    append("Content-Type: application/json\r\n")
+                    append("Content-Length: ${body.toByteArray().size}\r\n")
+                    append("Connection: close\r\n")
+                    append("\r\n")
+                    append(body)
+                }
+                socket.getOutputStream().write(
+                    request.toByteArray(StandardCharsets.UTF_8),
+                )
+                socket.getOutputStream().flush()
+                val response = socket.getInputStream().bufferedReader().readText()
+                assertTrue(response.startsWith("HTTP/1.1 200"))
+                assertTrue(response.contains("\"read\":true"))
+            }
+
+            assertEquals(true, runBlocking { store.getById("one") }?.read)
+        } finally {
+            server.stop()
+        }
+    }
+
     private fun server() = LocalApiServer(
         router = LocalApiRouter(FakeSharedItemStore(), "0.1.0-test"),
         port = 0,

@@ -95,6 +95,7 @@ Deliverables:
 - Per-installation access key and Android pairing controls. Complete locally.
 - Bearer authorization for `/items` and `/items/{id}`. Complete locally.
 - Authenticated delete-current and clear-all routes. Complete locally.
+- Authenticated read/unread metadata route. Complete locally.
 
 Automated status:
 
@@ -102,8 +103,8 @@ Automated status:
   GitHub Actions.
 - Android unit tests, lint, APK build, and emulator instrumentation pass
   locally or in GitHub Actions.
-- 42 Android unit tests cover parser, persistence, link extraction, API
-  routing, authenticated mutations, restart, self-test, and bounded request
+- 46 Android unit tests cover parser, persistence, link extraction, API
+  routing, authenticated mutations, read-state updates, restart, self-test, and bounded request
   diagnostics locally.
 - Even Hub workflow run:
   `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638537`.
@@ -136,6 +137,8 @@ Deliverables:
 - Pagination and navigation. Complete.
 - Delete current. Complete locally.
 - Clear all with deliberate phone-side confirmation. Complete locally.
+- Manual and periodic inbox refresh. Complete locally.
+- Mark current item read/unread. Complete locally as a v0.2 candidate.
 - Explicit browser/simulator demo mode. Complete.
 - Danish and English reader copy. Complete.
 - Pagination, reader state, rendering, locale, and API tests. Complete locally.
@@ -143,15 +146,18 @@ Deliverables:
 
 Automated status:
 
-- 25 Even Hub test cases cover API validation, key storage, mutations, pagination,
-  navigation, rendering, reachability, and locale selection. The current
+- 29 Even Hub test cases cover API validation, key storage, mutations,
+  read-state updates, refresh reconciliation, pagination, navigation,
+  rendering, reachability, and locale selection. The current
   sandbox permits TypeScript typechecking; GitHub Actions remains the
   authoritative Vitest run.
 - TypeScript and Vite production build pass locally.
 - `.ehpk` packaging passes locally.
 - Browser validation covers multi-page navigation, item wraparound, disabled
   controls, localized API failure, retry, mutation cancellation, delete-current,
-  and clear-all.
+  and clear-all. Browser validation for the newest refresh/read-state UI was
+  not available in the current Codex browser session; HTTP preview responded
+  locally and automated render/state tests cover the flow.
 
 Exit criteria:
 
@@ -211,16 +217,22 @@ Exit criteria:
   validated redirects, and caps responses at 1 MiB.
 - Delete and clear are implemented; packaged authenticated mutation validation
   remains a release gate.
+- Read/unread is implemented through authenticated `PATCH /items/{id}` with a
+  boolean-only body.
+- Even Hub polls the local inbox periodically and offers manual refresh while
+  preserving the current selection when possible.
 
 ## Open decisions
 
 - Whether Even Hub WebView can reach Android loopback.
 - Whether Android needs a foreground service for local server lifetime.
 - Whether v0.2 should add undo after confirmed deletion.
+- Whether read/unread should gain filters or automatic "mark read when opened"
+  behavior.
 
 ## Immediate next task
 
 Build and install the new artifacts, pair Even Hub with the Android key, and
-execute the physical-phone reachability, reader mutation, and link-content
-scripts. Use Android diagnostics to record the packaged WebView origin and
-background lifetime before release acceptance.
+execute the physical-phone reachability, reader mutation, read-state refresh,
+and link-content scripts. Use Android diagnostics to record the packaged
+WebView origin and background lifetime before release acceptance.

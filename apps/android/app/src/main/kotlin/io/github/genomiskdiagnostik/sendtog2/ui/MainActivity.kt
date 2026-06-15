@@ -94,6 +94,7 @@ class MainActivity : ComponentActivity() {
                         onRestartApi = viewModel::restartLocalApi,
                         onCopyAccessKey = ::copyAccessKey,
                         onRotateAccessKey = viewModel::rotateAccessKey,
+                        onUpdateRead = viewModel::updateRead,
                         onDelete = viewModel::delete,
                         onClearAll = viewModel::clearAll,
                     )
@@ -142,6 +143,7 @@ private fun InboxScreen(
     onRestartApi: () -> Unit,
     onCopyAccessKey: (String) -> Unit,
     onRotateAccessKey: () -> Unit,
+    onUpdateRead: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onClearAll: () -> Unit,
 ) {
@@ -236,7 +238,11 @@ private fun InboxScreen(
                 }
             }
             items(items, key = SharedItem::id) { item ->
-                SharedItemCard(item = item, onDelete = { onDelete(item.id) })
+                SharedItemCard(
+                    item = item,
+                    onToggleRead = { onUpdateRead(item.id, !item.read) },
+                    onDelete = { onDelete(item.id) },
+                )
             }
         }
     }
@@ -495,6 +501,7 @@ private fun NotificationPermissionCard(
 @Composable
 private fun SharedItemCard(
     item: SharedItem,
+    onToggleRead: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -507,7 +514,9 @@ private fun SharedItemCard(
                     text = when (item.type) {
                         SharedItemType.TEXT -> stringResource(R.string.type_text)
                         SharedItemType.URL -> stringResource(R.string.type_url)
-                    },
+                    } + " - " + stringResource(
+                        if (item.read) R.string.read_state_read else R.string.read_state_unread,
+                    ),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -538,8 +547,19 @@ private fun SharedItemCard(
             Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                OutlinedButton(onClick = onToggleRead) {
+                    Text(
+                        stringResource(
+                            if (item.read) {
+                                R.string.mark_unread
+                            } else {
+                                R.string.mark_read
+                            },
+                        ),
+                    )
+                }
                 OutlinedButton(onClick = onDelete) {
                     Text(stringResource(R.string.delete_item))
                 }

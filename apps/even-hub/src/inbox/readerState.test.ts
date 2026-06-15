@@ -82,6 +82,58 @@ describe('reader state', () => {
     expect(reduceReader(state, { type: 'clear' }))
       .toEqual({ status: 'empty' })
   })
+
+  it('refreshes items while preserving the current item and page when possible', () => {
+    const state: ReaderState = {
+      status: 'ready',
+      items: [item('one'), item('two', 'word '.repeat(400))],
+      selectedIndex: 1,
+      pageIndex: 1,
+    }
+
+    const next = reduceReader(state, {
+      type: 'refresh',
+      items: [item('new'), item('two', 'word '.repeat(400)), item('one')],
+    })
+
+    expect(next).toMatchObject({ selectedIndex: 1, pageIndex: 1 })
+    expect(getCurrentItem(next)?.id).toBe('two')
+  })
+
+  it('refresh resets to a valid item when the current item disappeared', () => {
+    const state: ReaderState = {
+      status: 'ready',
+      items: [item('one'), item('two')],
+      selectedIndex: 1,
+      pageIndex: 1,
+    }
+
+    const next = reduceReader(state, {
+      type: 'refresh',
+      items: [item('new')],
+    })
+
+    expect(next).toMatchObject({ selectedIndex: 0, pageIndex: 0 })
+    expect(getCurrentItem(next)?.id).toBe('new')
+  })
+
+  it('updates read state on the selected item only', () => {
+    const state: ReaderState = {
+      status: 'ready',
+      items: [item('one'), item('two')],
+      selectedIndex: 1,
+      pageIndex: 0,
+    }
+
+    const next = reduceReader(state, {
+      type: 'update-current-read',
+      read: true,
+    })
+
+    expect(next.status).toBe('ready')
+    if (next.status !== 'ready') return
+    expect(next.items.map(value => value.read)).toEqual([false, true])
+  })
 })
 
 function item(id: string, text = `Text for ${id}`): SharedItem {

@@ -82,6 +82,24 @@ Responses:
 - `200` with item JSON.
 - `404` if not found.
 
+### PATCH /items/{id}
+
+Updates mutable item metadata. Requires the Bearer access key.
+
+Request:
+
+```json
+{
+  "read": true
+}
+```
+
+Responses:
+
+- `200` with the updated item JSON.
+- `400` if the request body is malformed or does not include a boolean `read`.
+- `404` if not found.
+
 ### DELETE /items/{id}
 
 Deletes one item. Requires the Bearer access key.
@@ -106,10 +124,11 @@ The current Android server implements:
 - `GET /health`
 - `GET /items`
 - `GET /items/{id}`
+- `PATCH /items/{id}`
 - `DELETE /items/{id}`
 - `DELETE /items`
 - `OPTIONS`
-- JSON `401`, `404`, and `405` responses
+- JSON `400`, `401`, `404`, and `405` responses
 
 It binds only to `127.0.0.1`. The server runs for the lifetime of the Android
 application process. This is a feasibility lifecycle, not the final background
@@ -135,12 +154,14 @@ The key must never appear in API diagnostics, logs, URLs, or query strings.
 - A successful mutation updates the local reader state immediately.
 - A `401` returns the reader to pairing; other failures preserve the current
   reader item and show a retryable error.
+- Read/unread changes are non-destructive and do not require confirmation.
+- Even Hub refreshes manually and polls periodically while preserving the
+  current item and page when the item still exists.
 
 ## Future endpoints
 
 Deferred until needed:
 
-- `PATCH /items/{id}` for read/favorite state.
 - `POST /items` for manual entry.
 - `GET /items?query=` for search.
 - `DELETE /items?olderThan=` for expiry.

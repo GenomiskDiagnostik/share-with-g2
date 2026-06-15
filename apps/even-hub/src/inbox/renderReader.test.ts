@@ -36,7 +36,7 @@ describe('renderReader', () => {
 
     const view = renderReader(state, 'en')
     expect(view.heading).toBe('Example')
-    expect(view.meta).toBe('1/1 · Link · page 1/1')
+    expect(view.meta).toBe('1/1 · Link - unread · page 1/1')
     expect(view.body).toBe('https://example.com')
   })
 

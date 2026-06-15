@@ -25,6 +25,7 @@ import './style.css'
 
 const CONTAINER_ID = 1
 const CONTAINER_NAME = 'sharedInbox'
+const REFRESH_INTERVAL_MS = 10_000
 type MutationAction = 'delete-current' | 'clear'
 
 async function main() {
@@ -83,7 +84,56 @@ async function main() {
     }
   }
 
-  bindWebActions(root, dispatch, strings, () => state, mutate)
+  const refreshItems = async (manual: boolean) => {
+    if (demoMode) {
+      await dispatch({ type: 'refresh', items: DEMO_ITEMS })
+      if (manual) setText(root, '#mutation-status', strings.refreshSuccess)
+      return
+    }
+    if (!client) return
+    try {
+      await dispatch({ type: 'refresh', items: await client.items() })
+      if (manual) setText(root, '#mutation-status', strings.refreshSuccess)
+    } catch (error) {
+      const failure = classifyFailure(error)
+      if (failure === 'unauthorized') {
+        await dispatch({ type: 'fail', reason: failure })
+      } else if (manual) {
+        setText(root, '#mutation-status', strings.refreshFailure)
+      }
+    }
+  }
+
+  const updateCurrentRead = async () => {
+    if (state.status !== 'ready') return
+    const currentItem = getCurrentItem(state)
+    if (!currentItem) return
+    const read = !currentItem.read
+    try {
+      if (!demoMode) {
+        if (!client) throw new Error('Missing local API client')
+        await client.updateRead(currentItem.id, read)
+      }
+      await dispatch({ type: 'update-current-read', read })
+    } catch (error) {
+      const failure = classifyFailure(error)
+      if (failure === 'unauthorized') {
+        await dispatch({ type: 'fail', reason: failure })
+      } else {
+        setText(root, '#mutation-status', strings.readMutationFailure)
+      }
+    }
+  }
+
+  bindWebActions(
+    root,
+    dispatch,
+    strings,
+    () => state,
+    mutate,
+    () => refreshItems(true),
+    updateCurrentRead,
+  )
   renderWeb(
     root,
     renderReader(state, locale),
@@ -133,6 +183,9 @@ async function main() {
   try {
     await client.health()
     await dispatch({ type: 'load', items: await client.items() })
+    window.setInterval(() => {
+      void refreshItems(false)
+    }, REFRESH_INTERVAL_MS)
   } catch (error) {
     await dispatch({ type: 'fail', reason: classifyFailure(error) })
   }
@@ -175,9 +228,11 @@ function renderWeb(
         <button type="button" data-action="previous-page" id="previous-page"></button>
         <button type="button" data-action="next-page" id="next-page"></button>
         <button type="button" data-action="next-item" id="next-item"></button>
+        <button type="button" data-refresh id="refresh-items"></button>
         <button type="button" data-reload id="retry" hidden></button>
       </div>
       <div class="mutation-actions" id="mutation-actions" hidden>
+        <button type="button" data-read-toggle id="read-toggle"></button>
         <button type="button" class="danger-secondary" data-mutation="delete-current" id="delete-current"></button>
         <button type="button" class="danger" data-mutation="clear" id="clear-all"></button>
       </div>
@@ -203,12 +258,18 @@ function renderWeb(
   setText(root, '#previous-page', strings.previousPage)
   setText(root, '#next-page', strings.nextPage)
   setText(root, '#next-item', strings.nextItem)
+  setText(root, '#refresh-items', strings.refresh)
   setText(root, '#retry', strings.retry)
   setText(root, '#pairing-label', strings.pairingLabel)
   setText(root, '#pairing-help', strings.pairingHelp)
   setText(root, '#pairing-save', strings.pairingSave)
   setText(root, '#delete-current', strings.deleteCurrent)
   setText(root, '#clear-all', strings.clearAll)
+  setText(
+    root,
+    '#read-toggle',
+    view.currentRead ? strings.markUnread : strings.markRead,
+  )
   setText(root, '#confirmation-cancel', strings.mutationCancel)
 
   const pairingForm = root.querySelector<HTMLFormElement>('[data-pairing-form]')
@@ -241,6 +302,8 @@ function bindWebActions(
   strings: ReturnType<typeof getStrings>,
   getState: () => ReaderState,
   mutate: (action: MutationAction) => Promise<ReaderFailureReason | undefined>,
+  refreshItems: () => Promise<void>,
+  updateCurrentRead: () => Promise<void>,
 ) {
   root.addEventListener('submit', event => {
     const form = (event.target as HTMLElement).closest<HTMLFormElement>(
@@ -260,6 +323,37 @@ function bindWebActions(
   })
 
   root.addEventListener('click', event => {
+    const readToggle = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-read-toggle]',
+    )
+    if (readToggle) {
+      readToggle.disabled = true
+      readToggle.textContent = strings.mutationWorking
+      void updateCurrentRead().finally(() => {
+        if (!readToggle.isConnected) return
+        const currentItem = getCurrentItem(getState())
+        readToggle.disabled = false
+        readToggle.textContent = currentItem?.read
+          ? strings.markUnread
+          : strings.markRead
+      })
+      return
+    }
+
+    const refreshButton = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-refresh]',
+    )
+    if (refreshButton) {
+      refreshButton.disabled = true
+      refreshButton.textContent = strings.mutationWorking
+      void refreshItems().finally(() => {
+        if (!refreshButton.isConnected) return
+        refreshButton.disabled = false
+        refreshButton.textContent = strings.refresh
+      })
+      return
+    }
+
     const cancelMutation = (event.target as HTMLElement).closest<HTMLButtonElement>(
       '[data-cancel-mutation]',
     )

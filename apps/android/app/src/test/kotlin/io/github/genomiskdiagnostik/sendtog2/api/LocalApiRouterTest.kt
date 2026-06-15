@@ -19,7 +19,7 @@ class LocalApiRouterTest {
         assertEquals(200, response.status)
         assertEquals("*", response.headers["Access-Control-Allow-Origin"])
         assertEquals(
-            "GET, DELETE, OPTIONS",
+            "GET, PATCH, DELETE, OPTIONS",
             response.headers["Access-Control-Allow-Methods"],
         )
         assertEquals(
@@ -51,7 +51,7 @@ class LocalApiRouterTest {
         val response = router().route(ApiRequest("POST", "/items"))
 
         assertEquals(405, response.status)
-        assertEquals("GET, DELETE, OPTIONS", response.headers["Allow"])
+        assertEquals("GET, PATCH, DELETE, OPTIONS", response.headers["Allow"])
     }
 
     @Test
@@ -109,7 +109,56 @@ class LocalApiRouterTest {
     }
 
     @Test
-    fun `unauthorized delete leaves repository unchanged`() = runBlocking {
+    fun `patch item updates read state`() = runBlocking {
+        val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
+
+        val response = router(store).route(
+            ApiRequest(
+                method = "PATCH",
+                path = "/items/one",
+                body = """{"read":true}""",
+            ),
+        )
+
+        assertEquals(200, response.status)
+        assertEquals("true", json(response.body)["read"]?.jsonPrimitive?.content)
+        assertEquals(true, store.getById("one")?.read)
+        assertEquals(
+            404,
+            router(store).route(
+                ApiRequest("PATCH", "/items/missing", body = """{"read":true}"""),
+            ).status,
+        )
+    }
+
+    @Test
+    fun `patch item rejects invalid bodies`() = runBlocking {
+        val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
+
+        assertEquals(
+            400,
+            router(store).route(
+                ApiRequest("PATCH", "/items/one", body = """{"read":"yes"}"""),
+            ).status,
+        )
+        assertEquals(false, store.getById("one")?.read)
+    }
+
+    @Test
+    fun `patch collection route is rejected without mutating`() = runBlocking {
+        val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
+
+        val response = router(store).route(
+            ApiRequest("PATCH", "/items", body = """{"read":true}"""),
+        )
+
+        assertEquals(405, response.status)
+        assertEquals("GET, DELETE, OPTIONS", response.headers["Allow"])
+        assertEquals(false, store.getById("one")?.read)
+    }
+
+    @Test
+    fun `unauthorized mutations leave repository unchanged`() = runBlocking {
         val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
         val router = LocalApiRouter(
             store = store,
@@ -117,10 +166,15 @@ class LocalApiRouterTest {
             authorizer = LocalApiAuthorizer { false },
         )
 
-        val response = router.route(ApiRequest("DELETE", "/items/one"))
+        val deleteResponse = router.route(ApiRequest("DELETE", "/items/one"))
+        val patchResponse = router.route(
+            ApiRequest("PATCH", "/items/one", body = """{"read":true}"""),
+        )
 
-        assertEquals(401, response.status)
+        assertEquals(401, deleteResponse.status)
+        assertEquals(401, patchResponse.status)
         assertEquals(listOf("one"), store.getAll().map(SharedItem::id))
+        assertEquals(false, store.getById("one")?.read)
     }
 
     @Test

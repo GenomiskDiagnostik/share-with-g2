@@ -4,7 +4,7 @@ Local-first Android companion app and Even Hub G2 webapp for sending shared text
 
 ## Product summary
 
-Send to G2 appears as an Android Sharesheet target. When a user shares text, a URL, or simple HTML-derived text from Chrome, Reddit, email, PDF viewers, or other apps, the Android app stores the item locally, emits a normal Android notification, and exposes a local inbox API. The Even Hub app reads that local inbox and presents a glasses-friendly Shared Inbox with pagination, navigation, single-item deletion, and clear-all.
+Send to G2 appears as an Android Sharesheet target. When a user shares text, a URL, or simple HTML-derived text from Chrome, Reddit, email, PDF viewers, or other apps, the Android app stores the item locally, emits a normal Android notification, and exposes a local inbox API. The Even Hub app reads that local inbox and presents a glasses-friendly Shared Inbox with pagination, navigation, live refresh, read/unread state, single-item deletion, and clear-all.
 
 The MVP deliberately avoids direct BLE reverse engineering. Notifications should flow through the existing Even notification mirroring pipeline where available. The G2 app is a reader/inbox, not a low-level hardware integration layer.
 
@@ -27,11 +27,16 @@ Version 0.1 supports:
 - Explicit same-phone pairing with a per-installation local API access key.
 - Newest-first list semantics.
 - Open/read item.
+- Manual and periodic inbox refresh.
 - Delete current item.
 - Clear all items.
 - Pagination for long text.
 
-Deferred to v0.2+:
+Implemented v0.2 candidate:
+
+- Mark current item read or unread through the authenticated local API.
+
+Deferred to later v0.2+:
 
 - Image storage and thumbnail display.
 - PDF/file ingestion.

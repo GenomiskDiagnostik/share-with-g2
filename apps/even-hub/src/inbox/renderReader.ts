@@ -13,6 +13,7 @@ export type ReaderView = {
   canNavigateItems: boolean
   canNavigatePages: boolean
   needsPairing: boolean
+  currentRead?: boolean
 }
 
 export function renderReader(
@@ -46,12 +47,14 @@ export function renderReader(
   const pageIndex = Math.min(state.pageIndex, pages.length - 1)
   const body = pages[pageIndex] ?? ''
   const title = item.title?.trim() || copy.untitled
+  const type = item.type === 'url' ? copy.typeUrl : copy.typeText
+  const readState = item.read ? copy.readStateRead : copy.readStateUnread
   const meta = copy.readerMeta(
     state.selectedIndex + 1,
     state.items.length,
     pageIndex + 1,
     pages.length,
-    item.type === 'url' ? copy.typeUrl : copy.typeText,
+    `${type} - ${readState}`,
   )
   const help = copy.readerHelp
   const glassText = `${meta}\n${title}\n\n${body}\n\n${help}`
@@ -67,6 +70,7 @@ export function renderReader(
     canNavigateItems: state.items.length > 1,
     canNavigatePages: pages.length > 1,
     needsPairing: false,
+    currentRead: item.read,
   }
 }
 

@@ -112,6 +112,38 @@ describe('LocalApiClient', () => {
       expect.objectContaining({ method: 'DELETE' }),
     )
   })
+
+  it('updates read state with an authenticated patch request', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({
+      id: 'one',
+      type: 'text',
+      text: 'Text',
+      createdAt: 100,
+      read: true,
+    }))
+    const client = new LocalApiClient(
+      'http://127.0.0.1:8765',
+      fetcher,
+      3_000,
+      'private-key',
+    )
+
+    await expect(client.updateRead('one', true)).resolves.toMatchObject({
+      id: 'one',
+      read: true,
+    })
+    expect(fetcher).toHaveBeenCalledWith(
+      'http://127.0.0.1:8765/items/one',
+      expect.objectContaining({
+        method: 'PATCH',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer private-key',
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify({ read: true }),
+      }),
+    )
+  })
 })
 
 function jsonResponse(value: unknown): Response {

@@ -41,8 +41,16 @@ export type AppStrings = {
   nextItem: string
   previousPage: string
   nextPage: string
+  refresh: string
   deleteCurrent: string
   clearAll: string
+  markRead: string
+  markUnread: string
+  readStateRead: string
+  readStateUnread: string
+  refreshSuccess: string
+  refreshFailure: string
+  readMutationFailure: string
   mutationCancel: string
   mutationConfirmDelete: string
   mutationConfirmClear: string
@@ -101,8 +109,16 @@ const strings: Record<SupportedLocale, AppStrings> = {
     nextItem: 'Næste element',
     previousPage: 'Forrige side',
     nextPage: 'Næste side',
+    refresh: 'Opdatér',
     deleteCurrent: 'Slet element',
     clearAll: 'Ryd alt',
+    markRead: 'Markér læst',
+    markUnread: 'Markér ulæst',
+    readStateRead: 'læst',
+    readStateUnread: 'ulæst',
+    refreshSuccess: 'Indbakken er opdateret.',
+    refreshFailure: 'Indbakken kunne ikke opdateres lige nu.',
+    readMutationFailure: 'Læst-status kunne ikke opdateres. Prøv igen.',
     mutationCancel: 'Annuller',
     mutationConfirmDelete: 'Slet element',
     mutationConfirmClear: 'Ryd indbakke',
@@ -159,8 +175,16 @@ const strings: Record<SupportedLocale, AppStrings> = {
     nextItem: 'Next item',
     previousPage: 'Previous page',
     nextPage: 'Next page',
+    refresh: 'Refresh',
     deleteCurrent: 'Delete item',
     clearAll: 'Clear all',
+    markRead: 'Mark read',
+    markUnread: 'Mark unread',
+    readStateRead: 'read',
+    readStateUnread: 'unread',
+    refreshSuccess: 'Inbox refreshed.',
+    refreshFailure: 'The inbox could not be refreshed right now.',
+    readMutationFailure: 'Read status could not be updated. Try again.',
     mutationCancel: 'Cancel',
     mutationConfirmDelete: 'Delete item',
     mutationConfirmClear: 'Clear inbox',

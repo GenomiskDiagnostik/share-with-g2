@@ -3,7 +3,9 @@ package io.github.genomiskdiagnostik.sendtog2.api
 import io.github.genomiskdiagnostik.sendtog2.data.SharedItemStore
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -12,6 +14,7 @@ data class ApiRequest(
     val path: String,
     val headers: Map<String, String> = emptyMap(),
     val remoteAddress: String? = null,
+    val body: String = "",
 )
 
 data class ApiResponse(
@@ -39,7 +42,7 @@ class LocalApiRouter(
             return jsonResponse(
                 status = 405,
                 value = ErrorDto("method_not_allowed"),
-                extraHeaders = mapOf("Allow" to "GET, DELETE, OPTIONS"),
+                extraHeaders = mapOf("Allow" to "GET, PATCH, DELETE, OPTIONS"),
             )
         }
 
@@ -71,7 +74,7 @@ class LocalApiRouter(
         return when (request.path) {
             "/items" -> routeItems(request.method)
 
-            else -> routeItem(request.method, request.path)
+            else -> routeItem(request)
         }
     }
 
@@ -86,16 +89,20 @@ class LocalApiRouter(
             ApiResponse(status = 204, headers = corsHeaders())
         }
 
-        else -> error("Unsupported method passed routing guard")
+        else -> jsonResponse(
+            status = 405,
+            value = ErrorDto("method_not_allowed"),
+            extraHeaders = mapOf("Allow" to "GET, DELETE, OPTIONS"),
+        )
     }
 
-    private suspend fun routeItem(method: String, path: String): ApiResponse {
-        val id = path.removePrefix(ITEM_PATH_PREFIX)
-        if (!path.startsWith(ITEM_PATH_PREFIX) || id.isBlank() || '/' in id) {
+    private suspend fun routeItem(request: ApiRequest): ApiResponse {
+        val id = request.path.removePrefix(ITEM_PATH_PREFIX)
+        if (!request.path.startsWith(ITEM_PATH_PREFIX) || id.isBlank() || '/' in id) {
             return jsonResponse(status = 404, value = ErrorDto("not_found"))
         }
 
-        return when (method) {
+        return when (request.method) {
             "GET" -> {
                 val item = store.getById(id)
                 if (item == null) {
@@ -113,7 +120,33 @@ class LocalApiRouter(
                 }
             }
 
+            "PATCH" -> routeItemPatch(id, request.body)
+
             else -> error("Unsupported method passed routing guard")
+        }
+    }
+
+    private suspend fun routeItemPatch(id: String, body: String): ApiResponse {
+        val update = try {
+            json.decodeFromString<UpdateItemDto>(body)
+        } catch (_: SerializationException) {
+            return jsonResponse(status = 400, value = ErrorDto("bad_request"))
+        } catch (_: IllegalArgumentException) {
+            return jsonResponse(status = 400, value = ErrorDto("bad_request"))
+        }
+
+        val read = update.read
+            ?: return jsonResponse(status = 400, value = ErrorDto("bad_request"))
+
+        return if (store.updateRead(id, read)) {
+            val item = store.getById(id)
+            if (item == null) {
+                jsonResponse(status = 404, value = ErrorDto("not_found"))
+            } else {
+                jsonResponse(status = 200, value = item.toDto())
+            }
+        } else {
+            jsonResponse(status = 404, value = ErrorDto("not_found"))
         }
     }
 
@@ -131,7 +164,7 @@ class LocalApiRouter(
 
     private fun corsHeaders(): Map<String, String> = mapOf(
         "Access-Control-Allow-Origin" to "*",
-        "Access-Control-Allow-Methods" to "GET, DELETE, OPTIONS",
+        "Access-Control-Allow-Methods" to "GET, PATCH, DELETE, OPTIONS",
         "Access-Control-Allow-Headers" to
             "Authorization, Content-Type, X-Send-To-G2-Client",
         "Access-Control-Max-Age" to "600",
@@ -140,7 +173,7 @@ class LocalApiRouter(
     companion object {
         const val API_VERSION = "0.1.0"
         private const val ITEM_PATH_PREFIX = "/items/"
-        private val SUPPORTED_METHODS = setOf("GET", "DELETE")
+        private val SUPPORTED_METHODS = setOf("GET", "PATCH", "DELETE")
     }
 }
 
@@ -153,6 +186,11 @@ private data class HealthDto(
 @Serializable
 private data class ErrorDto(
     val error: String,
+)
+
+@Serializable
+private data class UpdateItemDto(
+    val read: Boolean? = null,
 )
 
 @Serializable

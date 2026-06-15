@@ -57,6 +57,12 @@ class MainViewModel(
         }
     }
 
+    fun updateRead(id: String, read: Boolean) {
+        viewModelScope.launch {
+            repository.updateRead(id, read)
+        }
+    }
+
     fun runLocalApiSelfTest() {
         if (mutableSelfTest.value == LocalApiSelfTestState.Running) return
         mutableSelfTest.value = LocalApiSelfTestState.Running

@@ -19,6 +19,8 @@ interface SharedItemStore {
         text: String,
     ): Boolean
 
+    suspend fun updateRead(id: String, read: Boolean): Boolean
+
     suspend fun deleteById(id: String): Boolean
 
     suspend fun clearAll()

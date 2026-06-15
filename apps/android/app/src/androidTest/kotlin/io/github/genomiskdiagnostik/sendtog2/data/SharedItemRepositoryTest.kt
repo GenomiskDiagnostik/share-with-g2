@@ -59,6 +59,15 @@ class SharedItemRepositoryTest {
     }
 
     @Test
+    fun updatesReadState() = runBlocking {
+        repository.insert(item(id = "first", createdAt = 100))
+
+        assertTrue(repository.updateRead("first", true))
+        assertEquals(true, repository.getById("first")?.read)
+        assertFalse(repository.updateRead("missing", true))
+    }
+
+    @Test
     fun updatesLinkContentOnlyWhileOriginalUrlIsStillStored() = runBlocking {
         val url = "https://example.com/article"
         repository.insert(
