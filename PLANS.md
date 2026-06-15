@@ -15,6 +15,8 @@ Phase 3: Even Hub Shared Inbox reader slice.
 - The Even Hub app can attempt to call a local phone endpoint at
   `http://127.0.0.1:8765`; feasibility must be validated early.
 - The MVP handles text and links only.
+- Screen snapshot mode is a separate v0.2 feasibility slice; it captures one
+  user-approved image and does not add image/file Sharesheet ingestion.
 - Android notifications provide immediate previews where notification
   permission and Even notification mirroring are enabled.
 - User-facing language follows the Android or Even Hub runtime locale.
@@ -96,6 +98,7 @@ Deliverables:
 - Bearer authorization for `/items` and `/items/{id}`. Complete locally.
 - Authenticated delete-current and clear-all routes. Complete locally.
 - Authenticated read/unread metadata route. Complete locally.
+- Authenticated latest screen snapshot route. Complete locally.
 
 Automated status:
 
@@ -103,9 +106,9 @@ Automated status:
   GitHub Actions.
 - Android unit tests, lint, APK build, and emulator instrumentation pass
   locally or in GitHub Actions.
-- 46 Android unit tests cover parser, persistence, link extraction, API
-  routing, authenticated mutations, read-state updates, restart, self-test, and bounded request
-  diagnostics locally.
+- 53 Android unit tests cover parser, persistence, link extraction, API
+  routing, authenticated mutations, read-state updates, screen snapshot sizing
+  and routing, restart, self-test, and bounded request diagnostics locally.
 - Even Hub workflow run:
   `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638537`.
 - Android workflow run:
@@ -139,6 +142,8 @@ Deliverables:
 - Clear all with deliberate phone-side confirmation. Complete locally.
 - Manual and periodic inbox refresh. Complete locally.
 - Mark current item read/unread. Complete locally as a v0.2 candidate.
+- Separate screen snapshot mode using the Even Hub image container API.
+  Complete locally; physical G2 image rendering pending.
 - Explicit browser/simulator demo mode. Complete.
 - Danish and English reader copy. Complete.
 - Pagination, reader state, rendering, locale, and API tests. Complete locally.
@@ -146,9 +151,9 @@ Deliverables:
 
 Automated status:
 
-- 29 Even Hub test cases cover API validation, key storage, mutations,
+- 34 Even Hub test cases cover API validation, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
-  rendering, reachability, and locale selection. The current
+  rendering, screen snapshot state, reachability, and locale selection. The current
   sandbox permits TypeScript typechecking; GitHub Actions remains the
   authoritative Vitest run.
 - TypeScript and Vite production build pass locally.
@@ -221,6 +226,9 @@ Exit criteria:
   boolean-only body.
 - Even Hub polls the local inbox periodically and offers manual refresh while
   preserving the current selection when possible.
+- Screen snapshot mode uses Android MediaProjection for one explicit frame,
+  stores only the latest in-memory PNG, and exposes it through authenticated
+  `GET /screen-snapshot`.
 
 ## Open decisions
 
@@ -229,10 +237,13 @@ Exit criteria:
 - Whether v0.2 should add undo after confirmed deletion.
 - Whether read/unread should gain filters or automatic "mark read when opened"
   behavior.
+- Whether physical G2 image-container behavior is good enough for screen
+  snapshot release.
+- Whether a later screen feature should be OCR-first or low-FPS image refresh.
 
 ## Immediate next task
 
 Build and install the new artifacts, pair Even Hub with the Android key, and
 execute the physical-phone reachability, reader mutation, read-state refresh,
-and link-content scripts. Use Android diagnostics to record the packaged
-WebView origin and background lifetime before release acceptance.
+screen snapshot, and link-content scripts. Use Android diagnostics to record
+the packaged WebView origin and background lifetime before release acceptance.

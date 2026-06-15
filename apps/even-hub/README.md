@@ -7,6 +7,7 @@ This directory contains the Even Hub G2 app.
 - Connect to Even Hub bridge.
 - Fetch local shared items from Android companion API.
 - Render a Shared Inbox optimized for 576 × 288 display constraints.
+- Render the latest Android screen snapshot in explicit snapshot mode.
 - Paginate long text.
 - Support navigation, delete current, and clear all.
 
@@ -37,8 +38,10 @@ This directory contains the Even Hub G2 app.
 - Danish remains the MVP UI language. Even Hub package metadata uses `en` as
   the required fallback because its current language enum has no `da` value.
 - Explicit `?demo=1` mode with local sample data for browser and simulator QA.
+- Explicit `?mode=snapshot` mode for the latest authenticated screen snapshot.
+- `?mode=snapshot&demo=1` mode for image-container/browser QA without Android.
 - Vitest coverage for API validation, pagination, navigation, rendering,
-  reachability, and locale selection.
+  screen snapshot rendering, reachability, and locale selection.
 
 ## Commands
 
@@ -52,6 +55,10 @@ npm run pack
 Use `http://127.0.0.1:5173/?demo=1` during development to exercise the reader
 without Android. Demo mode is explicit and never replaces a failed live API
 request.
+
+Use `http://127.0.0.1:5173/?mode=snapshot&demo=1` to exercise snapshot mode.
+Physical G2 validation is still required because SDK image-container behavior
+depends on the packaged Even Hub runtime.
 
 The minimal npm development dependencies are installed locally. GitHub Actions
 repeats the test, build, and packaging steps and publishes the reviewable

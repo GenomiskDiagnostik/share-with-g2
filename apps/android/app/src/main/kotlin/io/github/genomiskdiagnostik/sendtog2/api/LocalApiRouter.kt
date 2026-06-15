@@ -3,6 +3,8 @@ package io.github.genomiskdiagnostik.sendtog2.api
 import io.github.genomiskdiagnostik.sendtog2.data.SharedItemStore
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshot
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshotStore
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -27,6 +29,7 @@ class LocalApiRouter(
     private val store: SharedItemStore,
     private val version: String = API_VERSION,
     private val authorizer: LocalApiAuthorizer = LocalApiAuthorizer { true },
+    private val screenSnapshotStore: ScreenSnapshotStore = ScreenSnapshotStore(),
 ) {
     private val json = Json {
         encodeDefaults = true
@@ -72,10 +75,29 @@ class LocalApiRouter(
         }
 
         return when (request.path) {
+            "/screen-snapshot" -> routeScreenSnapshot(request.method)
+
             "/items" -> routeItems(request.method)
 
             else -> routeItem(request)
         }
+    }
+
+    private fun routeScreenSnapshot(method: String): ApiResponse = when (method) {
+        "GET" -> {
+            val snapshot = screenSnapshotStore.get()
+            if (snapshot == null) {
+                jsonResponse(status = 404, value = ErrorDto("not_found"))
+            } else {
+                jsonResponse(status = 200, value = snapshot.toDto())
+            }
+        }
+
+        else -> jsonResponse(
+            status = 405,
+            value = ErrorDto("method_not_allowed"),
+            extraHeaders = mapOf("Allow" to "GET, OPTIONS"),
+        )
     }
 
     private suspend fun routeItems(method: String): ApiResponse = when (method) {
@@ -204,6 +226,16 @@ private data class SharedItemDto(
     val read: Boolean,
 )
 
+@Serializable
+private data class ScreenSnapshotDto(
+    val id: String,
+    val createdAt: Long,
+    val width: Int,
+    val height: Int,
+    val mimeType: String,
+    val imageBase64: String,
+)
+
 private fun SharedItem.toDto(): SharedItemDto = SharedItemDto(
     id = id,
     type = when (type) {
@@ -215,4 +247,13 @@ private fun SharedItem.toDto(): SharedItemDto = SharedItemDto(
     sourceApp = sourceApp,
     createdAt = createdAt,
     read = read,
+)
+
+private fun ScreenSnapshot.toDto(): ScreenSnapshotDto = ScreenSnapshotDto(
+    id = id,
+    createdAt = createdAt,
+    width = width,
+    height = height,
+    mimeType = mimeType,
+    imageBase64 = imageBase64,
 )

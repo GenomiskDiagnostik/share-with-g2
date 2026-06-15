@@ -66,6 +66,17 @@ Store each shared item with this logical model:
 
 For v0.1 only `text` and `url` are persisted as active item types.
 
+### Screen Snapshot Mode
+
+Post-MVP feasibility:
+
+- Android can capture one user-approved screen snapshot through MediaProjection.
+- The latest snapshot is kept in memory only, not persisted as an inbox item.
+- Even Hub can fetch the latest snapshot through the authenticated local API
+  and attempt to render it through the SDK image-container API.
+- This is not live video mirroring and does not add image/file Sharesheet
+  ingestion.
+
 ### Notification
 
 - Create notification channel `shared_to_g2`.
@@ -119,6 +130,7 @@ For v0.1 only `text` and `url` are persisted as active item types.
 - Direct BLE integration.
 - Social sharing out of the inbox.
 - Complex rich-text formatting.
+- Live video screen mirroring.
 
 ## Definition of success
 

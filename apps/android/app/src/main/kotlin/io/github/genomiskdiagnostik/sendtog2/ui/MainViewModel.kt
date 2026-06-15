@@ -10,6 +10,8 @@ import io.github.genomiskdiagnostik.sendtog2.api.LocalApiSelfTestState
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiServer
 import io.github.genomiskdiagnostik.sendtog2.data.SharedItemStore
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshot
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshotStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +24,7 @@ class MainViewModel(
     private val repository: SharedItemStore,
     private val localApiServer: LocalApiServer,
     private val accessKeyStore: LocalApiAccessKeyStore,
+    private val screenSnapshotStore: ScreenSnapshotStore,
     private val healthCheck: LocalApiHealthCheck = HttpLocalApiHealthCheck(),
 ) : ViewModel() {
     val items: StateFlow<List<SharedItem>> = repository.observeAll().stateIn(
@@ -37,6 +40,11 @@ class MainViewModel(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
         initialValue = "",
+    )
+    val screenSnapshot: StateFlow<ScreenSnapshot?> = screenSnapshotStore.observe().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = null,
     )
 
     init {
@@ -84,15 +92,25 @@ class MainViewModel(
         }
     }
 
+    fun clearScreenSnapshot() {
+        screenSnapshotStore.clear()
+    }
+
     class Factory(
         private val repository: SharedItemStore,
         private val localApiServer: LocalApiServer,
         private val accessKeyStore: LocalApiAccessKeyStore,
+        private val screenSnapshotStore: ScreenSnapshotStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MainViewModel::class.java))
-            return MainViewModel(repository, localApiServer, accessKeyStore) as T
+            return MainViewModel(
+                repository,
+                localApiServer,
+                accessKeyStore,
+                screenSnapshotStore,
+            ) as T
         }
     }
 }

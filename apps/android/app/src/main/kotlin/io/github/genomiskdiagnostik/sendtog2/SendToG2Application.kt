@@ -9,6 +9,7 @@ import io.github.genomiskdiagnostik.sendtog2.api.BearerTokenAuthorizer
 import io.github.genomiskdiagnostik.sendtog2.data.SharedDatabase
 import io.github.genomiskdiagnostik.sendtog2.data.SharedItemRepository
 import io.github.genomiskdiagnostik.sendtog2.notification.SharedNotificationService
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshotStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +23,8 @@ class SendToG2Application : Application() {
         private set
     lateinit var localApiServer: LocalApiServer
         private set
+    lateinit var screenSnapshotStore: ScreenSnapshotStore
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -34,9 +37,11 @@ class SendToG2Application : Application() {
 
         repository = SharedItemRepository(database.sharedItemDao())
         accessKeyStore = LocalApiAccessKeyStore(applicationContext)
+        screenSnapshotStore = ScreenSnapshotStore()
         localApiServer = LocalApiServer(
             router = LocalApiRouter(
                 store = repository,
+                screenSnapshotStore = screenSnapshotStore,
                 authorizer = BearerTokenAuthorizer(accessKeyStore),
             ),
         )

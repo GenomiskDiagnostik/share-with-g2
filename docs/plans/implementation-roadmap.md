@@ -102,9 +102,12 @@ Candidates:
 - PDF metadata and first-page text extraction.
 - Favorites/pin.
 - Read/unread filtering.
+- Single-frame screen snapshot mode.
+- OCR from a captured screen snapshot.
 - Search/history filters.
 - Auto-expire after 7/30 days.
 - Manual compose/send-to-G2 screen.
+- Low-FPS screen glance mode if physical G2 image updates prove reliable.
 - Optional private relay if local transport is impossible.
 
 ## First vertical slices

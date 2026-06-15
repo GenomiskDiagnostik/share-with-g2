@@ -144,6 +144,54 @@ describe('LocalApiClient', () => {
       }),
     )
   })
+
+  it('loads and validates a screen snapshot', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({
+      id: 'shot',
+      createdAt: 200,
+      width: 288,
+      height: 144,
+      mimeType: 'image/png',
+      imageBase64: 'abc123',
+    }))
+    const client = new LocalApiClient(
+      'http://127.0.0.1:8765',
+      fetcher,
+      3_000,
+      'private-key',
+    )
+
+    await expect(client.screenSnapshot()).resolves.toMatchObject({
+      id: 'shot',
+      width: 288,
+      height: 144,
+    })
+    expect(fetcher).toHaveBeenCalledWith(
+      'http://127.0.0.1:8765/screen-snapshot',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer private-key',
+        }),
+      }),
+    )
+  })
+
+  it('rejects oversized screen snapshots', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({
+      id: 'shot',
+      createdAt: 200,
+      width: 400,
+      height: 144,
+      mimeType: 'image/png',
+      imageBase64: 'abc123',
+    }))
+    const client = new LocalApiClient('http://127.0.0.1:8765', fetcher)
+
+    await expect(client.screenSnapshot()).rejects.toBeInstanceOf(
+      InvalidApiResponseError,
+    )
+  })
 })
 
 function jsonResponse(value: unknown): Response {

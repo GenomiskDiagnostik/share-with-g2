@@ -104,6 +104,27 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+.snapshot-preview {
+  min-height: 180px;
+  margin-top: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #365344;
+  border-radius: 16px;
+  background: #0a100d;
+}
+
+.snapshot-preview:empty::before {
+  content: '';
+}
+
+.snapshot-preview img {
+  max-width: 100%;
+  max-height: 260px;
+  image-rendering: auto;
+  border-radius: 10px;
+}
+
 .reader-help {
   min-height: 1.25rem;
   margin: 24px 0 0;

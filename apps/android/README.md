@@ -2,7 +2,8 @@
 
 The Android app is the persistence owner for Send to G2. It receives text and
 link shares, stores them in Room, emits a short notification preview, and
-shows a minimal local inbox for diagnostics and deletion.
+shows a minimal local inbox for diagnostics and deletion. It can also capture
+one user-approved screen snapshot for Even Hub snapshot mode.
 
 ## Baseline
 
@@ -62,6 +63,10 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
   metadata.
 - Last identified Even Hub origin and user-agent, without shared-content logs.
 - Danish and English UI selected from the system or per-app language.
+- One-frame screen snapshot capture through Android MediaProjection.
+- Short-lived `mediaProjection` foreground service for snapshot capture.
+- Latest screen snapshot exposed through authenticated `GET /screen-snapshot`.
+- Screen snapshots are scaled to `288 × 144` and kept in memory only.
 - Router-fake and loopback HTTP tests.
 
 Link extraction is intentionally bounded to a 1 MiB response with short
@@ -74,3 +79,4 @@ credential-bearing, and non-HTTP(S) destinations are rejected.
   restarted manually.
 - Physical Even Hub loopback and cleartext validation.
 - JavaScript-only page extraction.
+- Live video screen mirroring.

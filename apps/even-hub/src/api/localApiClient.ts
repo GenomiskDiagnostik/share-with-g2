@@ -15,6 +15,15 @@ export type SharedItem = {
   read: boolean
 }
 
+export type ScreenSnapshot = {
+  id: string
+  createdAt: number
+  width: number
+  height: number
+  mimeType: 'image/png'
+  imageBase64: string
+}
+
 type Fetcher = (
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -53,6 +62,12 @@ export class LocalApiClient {
       true,
       { read },
     ))
+  }
+
+  async screenSnapshot(): Promise<ScreenSnapshot> {
+    return parseScreenSnapshot(
+      await this.request('GET', '/screen-snapshot', true),
+    )
   }
 
   private async request(
@@ -133,6 +148,39 @@ function parseSharedItem(value: unknown): SharedItem {
     read: value.read,
     ...(value.title === undefined ? {} : { title: value.title }),
     ...(value.sourceApp === undefined ? {} : { sourceApp: value.sourceApp }),
+  }
+}
+
+function parseScreenSnapshot(value: unknown): ScreenSnapshot {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== 'string' ||
+    typeof value.createdAt !== 'number' ||
+    !Number.isSafeInteger(value.createdAt) ||
+    value.createdAt < 0 ||
+    typeof value.width !== 'number' ||
+    !Number.isInteger(value.width) ||
+    value.width < 1 ||
+    value.width > 288 ||
+    typeof value.height !== 'number' ||
+    !Number.isInteger(value.height) ||
+    value.height < 1 ||
+    value.height > 144 ||
+    value.mimeType !== 'image/png' ||
+    typeof value.imageBase64 !== 'string' ||
+    value.imageBase64.length === 0 ||
+    value.imageBase64.length > 512_000
+  ) {
+    throw new InvalidApiResponseError()
+  }
+
+  return {
+    id: value.id,
+    createdAt: value.createdAt,
+    width: value.width,
+    height: value.height,
+    mimeType: value.mimeType,
+    imageBase64: value.imageBase64,
   }
 }
 

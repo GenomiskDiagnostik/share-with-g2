@@ -1,5 +1,8 @@
 import {
   CreateStartUpPageContainer,
+  ImageContainerProperty,
+  ImageRawDataUpdate,
+  ImageRawDataUpdateResult,
   OsEventTypeList,
   TextContainerProperty,
   TextContainerUpgrade,
@@ -9,6 +12,7 @@ import {
   ApiStatusError,
   InvalidApiResponseError,
   LocalApiClient,
+  type ScreenSnapshot,
 } from './api/localApiClient'
 import { loadAccessKey, saveAccessKey } from './auth/accessKey'
 import {
@@ -20,11 +24,16 @@ import {
   type ReaderState,
 } from './inbox/readerState'
 import { DEMO_ITEMS, renderReader, type ReaderView } from './inbox/renderReader'
+import { renderSnapshot, type SnapshotState, type SnapshotView } from './snapshot/renderSnapshot'
 import { getStrings, resolveLocale } from './strings'
 import './style.css'
 
 const CONTAINER_ID = 1
 const CONTAINER_NAME = 'sharedInbox'
+const SNAPSHOT_TEXT_CONTAINER_ID = 2
+const SNAPSHOT_TEXT_CONTAINER_NAME = 'snapshotText'
+const SNAPSHOT_IMAGE_CONTAINER_ID = 3
+const SNAPSHOT_IMAGE_CONTAINER_NAME = 'snapshotImage'
 const REFRESH_INTERVAL_MS = 10_000
 type MutationAction = 'delete-current' | 'clear'
 
@@ -34,8 +43,13 @@ async function main() {
 
   const locale = resolveLocale(navigator.languages)
   const strings = getStrings(locale)
-  const demoMode = new URLSearchParams(window.location.search).get('demo') === '1'
+  const params = new URLSearchParams(window.location.search)
+  const demoMode = params.get('demo') === '1'
   document.documentElement.lang = locale
+  if (params.get('mode') === 'snapshot') {
+    await runScreenSnapshotMode(root, locale, strings, demoMode)
+    return
+  }
 
   let state: ReaderState = { status: 'loading' }
   let bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>> | undefined
@@ -189,6 +203,277 @@ async function main() {
   } catch (error) {
     await dispatch({ type: 'fail', reason: classifyFailure(error) })
   }
+}
+
+async function runScreenSnapshotMode(
+  root: HTMLElement,
+  locale: ReturnType<typeof resolveLocale>,
+  strings: ReturnType<typeof getStrings>,
+  demoMode: boolean,
+) {
+  let state: SnapshotState = { status: 'loading' }
+  let bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>> | undefined
+  let bridgeReady = false
+  let client: LocalApiClient | undefined
+
+  const render = async () => {
+    const view = renderSnapshot(state, locale)
+    renderSnapshotWeb(root, view, strings, demoMode ? strings.demoMode : undefined)
+    if (bridge && bridgeReady) {
+      await bridge.textContainerUpgrade(
+        new TextContainerUpgrade({
+          containerID: SNAPSHOT_TEXT_CONTAINER_ID,
+          containerName: SNAPSHOT_TEXT_CONTAINER_NAME,
+          contentOffset: 0,
+          contentLength: view.glassText.length,
+          content: view.glassText,
+        }),
+      )
+      await updateSnapshotImage(bridge, state)
+    }
+  }
+
+  const setState = async (next: SnapshotState) => {
+    state = next
+    await render()
+  }
+
+  const loadSnapshot = async (manual: boolean) => {
+    try {
+      if (demoMode) {
+        await setState({ status: 'ready', snapshot: DEMO_SNAPSHOT })
+        return
+      }
+      if (!client) return
+      await setState({ status: 'ready', snapshot: await client.screenSnapshot() })
+    } catch (error) {
+      if (error instanceof ApiStatusError && error.status === 404) {
+        await setState({ status: 'empty' })
+        return
+      }
+      await setState({ status: 'error', reason: classifyFailure(error) })
+    } finally {
+      if (manual) {
+        const refresh = root.querySelector<HTMLButtonElement>('[data-refresh-snapshot]')
+        if (refresh) {
+          refresh.disabled = false
+          refresh.textContent = strings.snapshotRefresh
+        }
+      }
+    }
+  }
+
+  bindSnapshotWebActions(root, strings, () => loadSnapshot(true), demoMode)
+  renderSnapshotWeb(
+    root,
+    renderSnapshot(state, locale),
+    strings,
+    demoMode ? strings.demoMode : undefined,
+  )
+
+  try {
+    bridge = await waitForEvenAppBridge()
+    const view = renderSnapshot(state, locale)
+    await bridge.createStartUpPageContainer(
+      new CreateStartUpPageContainer({
+        containerTotalNum: 2,
+        imageObject: [
+          new ImageContainerProperty({
+            xPosition: 144,
+            yPosition: 8,
+            width: 288,
+            height: 144,
+            containerID: SNAPSHOT_IMAGE_CONTAINER_ID,
+            containerName: SNAPSHOT_IMAGE_CONTAINER_NAME,
+          }),
+        ],
+        textObject: [
+          new TextContainerProperty({
+            xPosition: 0,
+            yPosition: 164,
+            width: 576,
+            height: 124,
+            borderWidth: 0,
+            borderColor: 5,
+            paddingLength: 8,
+            containerID: SNAPSHOT_TEXT_CONTAINER_ID,
+            containerName: SNAPSHOT_TEXT_CONTAINER_NAME,
+            content: view.glassText,
+            isEventCapture: 1,
+          }),
+        ],
+      }),
+    )
+    bridgeReady = true
+    bindBridgeActions(bridge, async action => {
+      if (action.type === 'next-item') {
+        await loadSnapshot(true)
+      }
+    })
+  } catch {
+    root.dataset.bridge = 'unavailable'
+  }
+
+  if (demoMode) {
+    await loadSnapshot(false)
+    return
+  }
+
+  client = new LocalApiClient(
+    undefined,
+    undefined,
+    undefined,
+    loadAccessKey(),
+  )
+  try {
+    await client.health()
+    await loadSnapshot(false)
+    window.setInterval(() => {
+      void loadSnapshot(false)
+    }, REFRESH_INTERVAL_MS)
+  } catch (error) {
+    await setState({ status: 'error', reason: classifyFailure(error) })
+  }
+}
+
+function renderSnapshotWeb(
+  root: HTMLElement,
+  view: SnapshotView,
+  strings: ReturnType<typeof getStrings>,
+  badge?: string,
+) {
+  root.innerHTML = `
+    <section class="reader-card snapshot-card" data-state="${view.status}">
+      <div class="reader-topline">
+        <p class="eyebrow">${strings.snapshotTitle}</p>
+        <span class="mode-badge" id="mode-badge" hidden></span>
+      </div>
+      <p class="reader-meta">${view.meta}</p>
+      <h1>${view.heading}</h1>
+      <p class="summary">${view.body}</p>
+      <div class="snapshot-preview" id="snapshot-preview"></div>
+      <p class="reader-help">${view.help}</p>
+      <form class="pairing-form" data-pairing-form hidden>
+        <label for="access-key">${strings.pairingLabel}</label>
+        <input
+          id="access-key"
+          name="access-key"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          required
+        >
+        <p>${strings.pairingHelp}</p>
+        <button type="submit">${strings.pairingSave}</button>
+      </form>
+      <div class="reader-actions">
+        <button type="button" data-refresh-snapshot>${strings.snapshotRefresh}</button>
+        <button type="button" data-open-inbox>${strings.snapshotOpenInbox}</button>
+        <button type="button" data-reload hidden>${strings.retry}</button>
+      </div>
+    </section>
+  `
+
+  const preview = root.querySelector<HTMLElement>('#snapshot-preview')
+  if (preview && view.imageSrc) {
+    const image = document.createElement('img')
+    image.src = view.imageSrc
+    image.alt = view.imageAlt
+    preview.append(image)
+  }
+
+  const pairingForm = root.querySelector<HTMLFormElement>('[data-pairing-form]')
+  if (pairingForm) pairingForm.hidden = !view.needsPairing
+  const retryButton = root.querySelector<HTMLButtonElement>('[data-reload]')
+  if (retryButton) {
+    retryButton.hidden = view.status !== 'error' || view.needsPairing
+  }
+
+  const badgeElement = root.querySelector<HTMLElement>('#mode-badge')
+  if (badge && badgeElement) {
+    badgeElement.hidden = false
+    badgeElement.textContent = badge
+  }
+}
+
+function bindSnapshotWebActions(
+  root: HTMLElement,
+  strings: ReturnType<typeof getStrings>,
+  refreshSnapshot: () => Promise<void>,
+  demoMode: boolean,
+) {
+  root.addEventListener('submit', event => {
+    const form = (event.target as HTMLElement).closest<HTMLFormElement>(
+      '[data-pairing-form]',
+    )
+    if (!form) return
+    event.preventDefault()
+    const input = form.elements.namedItem('access-key')
+    if (!(input instanceof HTMLInputElement)) return
+    input.setCustomValidity('')
+    if (!saveAccessKey(input.value)) {
+      input.setCustomValidity(strings.pairingInvalid)
+      input.reportValidity()
+      return
+    }
+    window.location.reload()
+  })
+
+  root.addEventListener('click', event => {
+    const refresh = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-refresh-snapshot]',
+    )
+    if (refresh) {
+      refresh.disabled = true
+      refresh.textContent = strings.mutationWorking
+      void refreshSnapshot()
+      return
+    }
+
+    const openInbox = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-open-inbox]',
+    )
+    if (openInbox) {
+      window.location.href = demoMode ? '?demo=1' : window.location.pathname
+      return
+    }
+
+    const retry = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-reload]',
+    )
+    if (retry) {
+      window.location.reload()
+    }
+  })
+}
+
+async function updateSnapshotImage(
+  bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>>,
+  state: SnapshotState,
+) {
+  if (state.status !== 'ready') return
+  const result = await bridge.updateImageRawData(
+    new ImageRawDataUpdate({
+      containerID: SNAPSHOT_IMAGE_CONTAINER_ID,
+      containerName: SNAPSHOT_IMAGE_CONTAINER_NAME,
+      imageData: state.snapshot.imageBase64,
+    }),
+  )
+  if (!ImageRawDataUpdateResult.isSuccess(result)) {
+    throw new Error(`Image update failed: ${result}`)
+  }
+}
+
+const DEMO_SNAPSHOT: ScreenSnapshot = {
+  id: 'demo-snapshot',
+  createdAt: 1_710_000_000_000,
+  width: 120,
+  height: 80,
+  mimeType: 'image/png',
+  imageBase64:
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
 }
 
 function renderWeb(

@@ -39,6 +39,19 @@ type SharedItem = {
 }
 ```
 
+Screen snapshots are separate from inbox items:
+
+```ts
+type ScreenSnapshot = {
+  id: string
+  createdAt: number
+  width: number
+  height: number
+  mimeType: 'image/png'
+  imageBase64: string
+}
+```
+
 ## Endpoints
 
 ### GET /health
@@ -117,6 +130,20 @@ Responses:
 
 - `204` on success.
 
+### GET /screen-snapshot
+
+Returns the latest in-memory, user-approved Android screen snapshot. Requires
+the Bearer access key.
+
+Responses:
+
+- `200` with snapshot JSON.
+- `404` if no snapshot is currently available.
+
+The image is a base64-encoded PNG scaled to the Even Hub image-container limit
+of at most `288 × 144`. Snapshots are not stored in Room and disappear when the
+Android process is killed or the user clears the snapshot.
+
 ## Implemented surface
 
 The current Android server implements:
@@ -127,6 +154,7 @@ The current Android server implements:
 - `PATCH /items/{id}`
 - `DELETE /items/{id}`
 - `DELETE /items`
+- `GET /screen-snapshot`
 - `OPTIONS`
 - JSON `400`, `401`, `404`, and `405` responses
 

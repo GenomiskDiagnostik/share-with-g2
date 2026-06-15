@@ -1,9 +1,11 @@
 package io.github.genomiskdiagnostik.sendtog2.ui
 
 import android.Manifest
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -51,6 +53,8 @@ import io.github.genomiskdiagnostik.sendtog2.api.LocalApiSelfTestState
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiState
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshot
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshotService
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -58,7 +62,12 @@ import java.time.format.DateTimeFormatter
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels {
         val app = application as SendToG2Application
-        MainViewModel.Factory(app.repository, app.localApiServer, app.accessKeyStore)
+        MainViewModel.Factory(
+            app.repository,
+            app.localApiServer,
+            app.accessKeyStore,
+            app.screenSnapshotStore,
+        )
     }
 
     private var notificationPermissionGranted by mutableStateOf(true)
@@ -66,6 +75,25 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
         notificationPermissionGranted = granted
+    }
+    private val screenCaptureLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val data = result.data
+        if (result.resultCode == Activity.RESULT_OK && data != null) {
+            ScreenSnapshotService.start(this, result.resultCode, data)
+            Toast.makeText(
+                this,
+                R.string.screen_snapshot_capture_started,
+                Toast.LENGTH_SHORT,
+            ).show()
+        } else {
+            Toast.makeText(
+                this,
+                R.string.screen_snapshot_capture_cancelled,
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,6 +109,7 @@ class MainActivity : ComponentActivity() {
                     .localApiServer.diagnostics.collectAsStateWithLifecycle()
                 val selfTest by viewModel.selfTest.collectAsStateWithLifecycle()
                 val accessKey by viewModel.accessKey.collectAsStateWithLifecycle()
+                val screenSnapshot by viewModel.screenSnapshot.collectAsStateWithLifecycle()
                 Surface(modifier = Modifier.fillMaxSize()) {
                     InboxScreen(
                         items = items,
@@ -88,12 +117,15 @@ class MainActivity : ComponentActivity() {
                         apiDiagnostics = apiDiagnostics,
                         selfTest = selfTest,
                         accessKey = accessKey,
+                        screenSnapshot = screenSnapshot,
                         notificationPermissionGranted = notificationPermissionGranted,
                         onRequestNotificationPermission = ::requestNotificationPermission,
                         onRunSelfTest = viewModel::runLocalApiSelfTest,
                         onRestartApi = viewModel::restartLocalApi,
                         onCopyAccessKey = ::copyAccessKey,
                         onRotateAccessKey = viewModel::rotateAccessKey,
+                        onCaptureScreenSnapshot = ::requestScreenSnapshot,
+                        onClearScreenSnapshot = viewModel::clearScreenSnapshot,
                         onUpdateRead = viewModel::updateRead,
                         onDelete = viewModel::delete,
                         onClearAll = viewModel::clearAll,
@@ -121,6 +153,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun requestScreenSnapshot() {
+        val manager = getSystemService(MediaProjectionManager::class.java)
+        screenCaptureLauncher.launch(manager.createScreenCaptureIntent())
+    }
+
     private fun copyAccessKey(accessKey: String) {
         if (accessKey.isBlank()) return
         getSystemService(ClipboardManager::class.java).setPrimaryClip(
@@ -137,12 +174,15 @@ private fun InboxScreen(
     apiDiagnostics: LocalApiDiagnosticsState,
     selfTest: LocalApiSelfTestState,
     accessKey: String,
+    screenSnapshot: ScreenSnapshot?,
     notificationPermissionGranted: Boolean,
     onRequestNotificationPermission: () -> Unit,
     onRunSelfTest: () -> Unit,
     onRestartApi: () -> Unit,
     onCopyAccessKey: (String) -> Unit,
     onRotateAccessKey: () -> Unit,
+    onCaptureScreenSnapshot: () -> Unit,
+    onClearScreenSnapshot: () -> Unit,
     onUpdateRead: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onClearAll: () -> Unit,
@@ -212,6 +252,13 @@ private fun InboxScreen(
                 onRotate = onRotateAccessKey,
             )
         }
+        item {
+            ScreenSnapshotCard(
+                snapshot = screenSnapshot,
+                onCapture = onCaptureScreenSnapshot,
+                onClear = onClearScreenSnapshot,
+            )
+        }
 
         if (!notificationPermissionGranted) {
             item {
@@ -243,6 +290,52 @@ private fun InboxScreen(
                     onToggleRead = { onUpdateRead(item.id, !item.read) },
                     onDelete = { onDelete(item.id) },
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScreenSnapshotCard(
+    snapshot: ScreenSnapshot?,
+    onCapture: () -> Unit,
+    onClear: () -> Unit,
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.screen_snapshot_title),
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.screen_snapshot_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = snapshot?.let {
+                    stringResource(
+                        R.string.screen_snapshot_latest,
+                        it.width,
+                        it.height,
+                        formatTimestamp(it.createdAt),
+                    )
+                } ?: stringResource(R.string.screen_snapshot_none),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onCapture) {
+                    Text(stringResource(R.string.screen_snapshot_capture))
+                }
+                OutlinedButton(
+                    onClick = onClear,
+                    enabled = snapshot != null,
+                ) {
+                    Text(stringResource(R.string.screen_snapshot_clear))
+                }
             }
         }
     }

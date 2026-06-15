@@ -51,6 +51,15 @@ export type AppStrings = {
   refreshSuccess: string
   refreshFailure: string
   readMutationFailure: string
+  snapshotTitle: string
+  snapshotLoading: string
+  snapshotEmpty: string
+  snapshotReady: string
+  snapshotRefresh: string
+  snapshotOpenInbox: string
+  snapshotHelp: string
+  snapshotImageAlt: string
+  snapshotMeta: (width: number, height: number) => string
   mutationCancel: string
   mutationConfirmDelete: string
   mutationConfirmClear: string
@@ -119,6 +128,15 @@ const strings: Record<SupportedLocale, AppStrings> = {
     refreshSuccess: 'Indbakken er opdateret.',
     refreshFailure: 'Indbakken kunne ikke opdateres lige nu.',
     readMutationFailure: 'Læst-status kunne ikke opdateres. Prøv igen.',
+    snapshotTitle: 'Skærmbillede',
+    snapshotLoading: 'Henter seneste skærmbillede...',
+    snapshotEmpty: 'Tag et skærmbillede i Android-appen først.',
+    snapshotReady: 'Seneste skærmbillede er klar til brillerne.',
+    snapshotRefresh: 'Opdatér skærmbillede',
+    snapshotOpenInbox: 'Åbn indbakke',
+    snapshotHelp: 'Brug Android-appen til at tage et nyt skærmbillede.',
+    snapshotImageAlt: 'Seneste skærmbillede',
+    snapshotMeta: (width, height) => `${width}×${height} billede`,
     mutationCancel: 'Annuller',
     mutationConfirmDelete: 'Slet element',
     mutationConfirmClear: 'Ryd indbakke',
@@ -185,6 +203,15 @@ const strings: Record<SupportedLocale, AppStrings> = {
     refreshSuccess: 'Inbox refreshed.',
     refreshFailure: 'The inbox could not be refreshed right now.',
     readMutationFailure: 'Read status could not be updated. Try again.',
+    snapshotTitle: 'Screen snapshot',
+    snapshotLoading: 'Loading latest screen snapshot...',
+    snapshotEmpty: 'Capture a screen snapshot in the Android app first.',
+    snapshotReady: 'Latest screen snapshot is ready for the glasses.',
+    snapshotRefresh: 'Refresh snapshot',
+    snapshotOpenInbox: 'Open inbox',
+    snapshotHelp: 'Use the Android app to capture a new screen snapshot.',
+    snapshotImageAlt: 'Latest screen snapshot',
+    snapshotMeta: (width, height) => `${width}×${height} image`,
     mutationCancel: 'Cancel',
     mutationConfirmDelete: 'Delete item',
     mutationConfirmClear: 'Clear inbox',

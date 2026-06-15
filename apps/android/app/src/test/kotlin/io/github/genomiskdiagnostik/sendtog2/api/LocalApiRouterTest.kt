@@ -2,6 +2,8 @@ package io.github.genomiskdiagnostik.sendtog2.api
 
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshot
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshotStore
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -44,6 +46,47 @@ class LocalApiRouterTest {
         assertEquals(200, response.status)
         assertEquals("new", items[0].jsonObject["id"]?.jsonPrimitive?.content)
         assertFalse(items[0].jsonObject.containsKey("title"))
+    }
+
+    @Test
+    fun `screen snapshot returns latest authenticated snapshot`() = runBlocking {
+        val snapshots = ScreenSnapshotStore().apply {
+            replace(
+                ScreenSnapshot(
+                    id = "shot",
+                    createdAt = 300,
+                    width = 288,
+                    height = 144,
+                    mimeType = "image/png",
+                    imageBase64 = "abc123",
+                ),
+            )
+        }
+
+        val response = router(screenSnapshotStore = snapshots)
+            .route(ApiRequest("GET", "/screen-snapshot"))
+        val body = json(response.body)
+
+        assertEquals(200, response.status)
+        assertEquals("shot", body["id"]?.jsonPrimitive?.content)
+        assertEquals("image/png", body["mimeType"]?.jsonPrimitive?.content)
+        assertEquals("abc123", body["imageBase64"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `missing screen snapshot returns not found`() = runBlocking {
+        val response = router().route(ApiRequest("GET", "/screen-snapshot"))
+
+        assertEquals(404, response.status)
+        assertEquals("not_found", json(response.body)["error"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `screen snapshot supports get only`() = runBlocking {
+        val response = router().route(ApiRequest("DELETE", "/screen-snapshot"))
+
+        assertEquals(405, response.status)
+        assertEquals("GET, OPTIONS", response.headers["Allow"])
     }
 
     @Test
@@ -185,8 +228,14 @@ class LocalApiRouterTest {
         assertEquals("not_found", json(response.body)["error"]?.jsonPrimitive?.content)
     }
 
-    private fun router(store: FakeSharedItemStore = FakeSharedItemStore()) =
-        LocalApiRouter(store, "0.1.0-test")
+    private fun router(
+        store: FakeSharedItemStore = FakeSharedItemStore(),
+        screenSnapshotStore: ScreenSnapshotStore = ScreenSnapshotStore(),
+    ) = LocalApiRouter(
+        store = store,
+        version = "0.1.0-test",
+        screenSnapshotStore = screenSnapshotStore,
+    )
 
     private fun json(value: String) = Json.parseToJsonElement(value).jsonObject
 
