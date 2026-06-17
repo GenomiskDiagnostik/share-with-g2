@@ -273,6 +273,14 @@ private fun InboxScreen(
             }
         }
 
+        item {
+            ScreenSnapshotCard(
+                snapshot = screenSnapshot,
+                onCapture = onCaptureScreenSnapshot,
+                onClear = onClearScreenSnapshot,
+            )
+        }
+
         if (items.isEmpty()) {
             item {
                 Text(
@@ -355,13 +363,6 @@ private fun SettingsScreen(
                 accessKey = accessKey,
                 onCopy = onCopyAccessKey,
                 onRotate = onRotateAccessKey,
-            )
-        }
-        item {
-            ScreenSnapshotCard(
-                snapshot = screenSnapshot,
-                onCapture = onCaptureScreenSnapshot,
-                onClear = onClearScreenSnapshot,
             )
         }
         if (!notificationPermissionGranted) {
