@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -188,6 +189,7 @@ private fun InboxScreen(
     onClearAll: () -> Unit,
 ) {
     var showClearConfirmation by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
 
     if (showClearConfirmation) {
         AlertDialog(
@@ -212,6 +214,26 @@ private fun InboxScreen(
         )
     }
 
+    if (showSettings) {
+        SettingsScreen(
+            apiState = apiState,
+            apiDiagnostics = apiDiagnostics,
+            selfTest = selfTest,
+            accessKey = accessKey,
+            screenSnapshot = screenSnapshot,
+            notificationPermissionGranted = notificationPermissionGranted,
+            onBack = { showSettings = false },
+            onRequestNotificationPermission = onRequestNotificationPermission,
+            onRunSelfTest = onRunSelfTest,
+            onRestartApi = onRestartApi,
+            onCopyAccessKey = onCopyAccessKey,
+            onRotateAccessKey = onRotateAccessKey,
+            onCaptureScreenSnapshot = onCaptureScreenSnapshot,
+            onClearScreenSnapshot = onClearScreenSnapshot,
+        )
+        return
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -219,50 +241,29 @@ private fun InboxScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Column {
-                Text(
-                    text = stringResource(R.string.inbox_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = pluralStringResource(
-                        R.plurals.item_count,
-                        items.size,
-                        items.size,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        item {
-            LocalApiCard(
-                state = apiState,
-                diagnostics = apiDiagnostics,
-                selfTest = selfTest,
-                onRunSelfTest = onRunSelfTest,
-                onRestartApi = onRestartApi,
-            )
-        }
-        item {
-            AccessKeyCard(
-                accessKey = accessKey,
-                onCopy = onCopyAccessKey,
-                onRotate = onRotateAccessKey,
-            )
-        }
-        item {
-            ScreenSnapshotCard(
-                snapshot = screenSnapshot,
-                onCapture = onCaptureScreenSnapshot,
-                onClear = onClearScreenSnapshot,
-            )
-        }
-
-        if (!notificationPermissionGranted) {
-            item {
-                NotificationPermissionCard(onRequestNotificationPermission)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.inbox_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = pluralStringResource(
+                            R.plurals.item_count,
+                            items.size,
+                            items.size,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                OutlinedButton(onClick = { showSettings = true }) {
+                    Text(stringResource(R.string.settings_open))
+                }
             }
         }
 
@@ -290,6 +291,76 @@ private fun InboxScreen(
                     onToggleRead = { onUpdateRead(item.id, !item.read) },
                     onDelete = { onDelete(item.id) },
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsScreen(
+    apiState: LocalApiState,
+    apiDiagnostics: LocalApiDiagnosticsState,
+    selfTest: LocalApiSelfTestState,
+    accessKey: String,
+    screenSnapshot: ScreenSnapshot?,
+    notificationPermissionGranted: Boolean,
+    onBack: () -> Unit,
+    onRequestNotificationPermission: () -> Unit,
+    onRunSelfTest: () -> Unit,
+    onRestartApi: () -> Unit,
+    onCopyAccessKey: (String) -> Unit,
+    onRotateAccessKey: () -> Unit,
+    onCaptureScreenSnapshot: () -> Unit,
+    onClearScreenSnapshot: () -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                OutlinedButton(onClick = onBack) {
+                    Text(stringResource(R.string.settings_back))
+                }
+            }
+        }
+        item {
+            LocalApiCard(
+                state = apiState,
+                diagnostics = apiDiagnostics,
+                selfTest = selfTest,
+                onRunSelfTest = onRunSelfTest,
+                onRestartApi = onRestartApi,
+            )
+        }
+        item {
+            AccessKeyCard(
+                accessKey = accessKey,
+                onCopy = onCopyAccessKey,
+                onRotate = onRotateAccessKey,
+            )
+        }
+        item {
+            ScreenSnapshotCard(
+                snapshot = screenSnapshot,
+                onCapture = onCaptureScreenSnapshot,
+                onClear = onClearScreenSnapshot,
+            )
+        }
+        if (!notificationPermissionGranted) {
+            item {
+                NotificationPermissionCard(onRequestNotificationPermission)
             }
         }
     }

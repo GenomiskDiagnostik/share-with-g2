@@ -29,6 +29,13 @@ export type AppStrings = {
   pairingHelp: string
   pairingSave: string
   pairingInvalid: string
+  openSettings: string
+  settingsTitle: string
+  settingsBack: string
+  settingsKeyStatusSet: string
+  settingsKeyStatusMissing: string
+  settingsClearKey: string
+  settingsKeyCleared: string
   readerMeta: (
     item: number,
     itemCount: number,
@@ -111,6 +118,13 @@ const strings: Record<SupportedLocale, AppStrings> = {
     pairingHelp: 'Kopiér nøglen fra “Par Even Hub” i Android-appen.',
     pairingSave: 'Gem og forbind',
     pairingInvalid: 'Indtast en gyldig adgangsnøgle.',
+    openSettings: 'Indstillinger',
+    settingsTitle: 'Indstillinger',
+    settingsBack: 'Tilbage',
+    settingsKeyStatusSet: 'Der er gemt en adgangsnøgle på denne enhed.',
+    settingsKeyStatusMissing: 'Der er ikke gemt en adgangsnøgle endnu.',
+    settingsClearKey: 'Ryd gemt nøgle',
+    settingsKeyCleared: 'Den gemte nøgle er ryddet.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · side ${page}/${pageCount}`,
     readerHelp: 'Klik: næste · Scroll: side · Dobbeltklik: luk',
@@ -186,6 +200,13 @@ const strings: Record<SupportedLocale, AppStrings> = {
     pairingHelp: 'Copy the key from “Pair Even Hub” in the Android app.',
     pairingSave: 'Save and connect',
     pairingInvalid: 'Enter a valid access key.',
+    openSettings: 'Settings',
+    settingsTitle: 'Settings',
+    settingsBack: 'Back',
+    settingsKeyStatusSet: 'An access key is saved on this device.',
+    settingsKeyStatusMissing: 'No access key is saved yet.',
+    settingsClearKey: 'Clear saved key',
+    settingsKeyCleared: 'The saved key was cleared.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · page ${page}/${pageCount}`,
     readerHelp: 'Click: next · Scroll: page · Double-click: close',

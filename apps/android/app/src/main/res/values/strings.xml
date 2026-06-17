@@ -13,6 +13,9 @@
     <string name="share_invalid">The share contains no supported text.</string>
     <string name="share_too_large">The text is too long for the G2 inbox.</string>
     <string name="inbox_title">Shared inbox</string>
+    <string name="settings_open">⚙ Settings</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
     <string name="empty_inbox">No shared items yet.</string>
     <string name="notification_permission_title">Allow notifications</string>
     <string name="notification_permission_body">Notifications provide a short preview that may be mirrored to G2 depending on your Even settings.</string>

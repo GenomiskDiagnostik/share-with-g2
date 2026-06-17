@@ -14,7 +14,7 @@ import {
   LocalApiClient,
   type ScreenSnapshot,
 } from './api/localApiClient'
-import { loadAccessKey, saveAccessKey } from './auth/accessKey'
+import { clearAccessKey, loadAccessKey, saveAccessKey } from './auth/accessKey'
 import {
   getCurrentItem,
   reduceReader,
@@ -46,6 +46,10 @@ async function main() {
   const params = new URLSearchParams(window.location.search)
   const demoMode = params.get('demo') === '1'
   document.documentElement.lang = locale
+  if (params.get('settings') === '1') {
+    runSettingsMode(root, strings)
+    return
+  }
   if (params.get('mode') === 'snapshot') {
     await runScreenSnapshotMode(root, locale, strings, demoMode)
     return
@@ -346,7 +350,10 @@ function renderSnapshotWeb(
     <section class="reader-card snapshot-card" data-state="${view.status}">
       <div class="reader-topline">
         <p class="eyebrow">${strings.snapshotTitle}</p>
-        <span class="mode-badge" id="mode-badge" hidden></span>
+        <div class="top-actions">
+          <span class="mode-badge" id="mode-badge" hidden></span>
+          <button type="button" class="settings-button" data-open-settings aria-label="${strings.openSettings}" title="${strings.openSettings}">⚙</button>
+        </div>
       </div>
       <p class="reader-meta">${view.meta}</p>
       <h1>${view.heading}</h1>
@@ -385,7 +392,7 @@ function renderSnapshotWeb(
   }
 
   const pairingForm = root.querySelector<HTMLFormElement>('[data-pairing-form]')
-  if (pairingForm) pairingForm.hidden = !view.needsPairing
+  if (pairingForm) pairingForm.hidden = !shouldShowPairingForm(view.needsPairing)
   const retryButton = root.querySelector<HTMLButtonElement>('[data-reload]')
   if (retryButton) {
     retryButton.hidden = view.status !== 'error' || view.needsPairing
@@ -440,6 +447,14 @@ function bindSnapshotWebActions(
       return
     }
 
+    const openSettings = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-open-settings]',
+    )
+    if (openSettings) {
+      openSettingsPage()
+      return
+    }
+
     const retry = (event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-reload]',
     )
@@ -486,7 +501,10 @@ function renderWeb(
     <section class="reader-card" data-state="${view.status}">
       <div class="reader-topline">
         <p class="eyebrow" id="reader-eyebrow"></p>
-        <span class="mode-badge" id="mode-badge" hidden></span>
+        <div class="top-actions">
+          <span class="mode-badge" id="mode-badge" hidden></span>
+          <button type="button" class="settings-button" data-open-settings aria-label="${strings.openSettings}" title="${strings.openSettings}">⚙</button>
+        </div>
       </div>
       <p class="reader-meta" id="reader-meta"></p>
       <h1 id="reader-heading"></h1>
@@ -558,7 +576,7 @@ function renderWeb(
   setText(root, '#confirmation-cancel', strings.mutationCancel)
 
   const pairingForm = root.querySelector<HTMLFormElement>('[data-pairing-form]')
-  if (pairingForm) pairingForm.hidden = !view.needsPairing
+  if (pairingForm) pairingForm.hidden = !shouldShowPairingForm(view.needsPairing)
   const mutationActions = root.querySelector<HTMLElement>('#mutation-actions')
   if (mutationActions) mutationActions.hidden = view.status !== 'ready'
 
@@ -692,6 +710,14 @@ function bindWebActions(
       return
     }
 
+    const openSettings = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-open-settings]',
+    )
+    if (openSettings) {
+      openSettingsPage()
+      return
+    }
+
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-action]',
     )
@@ -737,6 +763,94 @@ function openMutationConfirmation(
   const backdrop = root.querySelector<HTMLElement>('#confirmation-backdrop')
   if (backdrop) backdrop.hidden = false
   confirm?.focus()
+}
+
+function runSettingsMode(
+  root: HTMLElement,
+  strings: ReturnType<typeof getStrings>,
+) {
+  const hasAccessKey = Boolean(loadAccessKey())
+  root.innerHTML = `
+    <section class="reader-card settings-card" data-state="settings">
+      <div class="reader-topline">
+        <p class="eyebrow">${strings.settingsTitle}</p>
+        <button type="button" class="settings-button" data-close-settings aria-label="${strings.settingsBack}" title="${strings.settingsBack}">←</button>
+      </div>
+      <h1>${strings.settingsTitle}</h1>
+      <p class="summary">${hasAccessKey ? strings.settingsKeyStatusSet : strings.settingsKeyStatusMissing}</p>
+      <form class="pairing-form" data-settings-pairing-form>
+        <label for="access-key">${strings.pairingLabel}</label>
+        <input
+          id="access-key"
+          name="access-key"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          required
+        >
+        <p>${strings.pairingHelp}</p>
+        <button type="submit">${strings.pairingSave}</button>
+      </form>
+      <p class="mutation-status" id="settings-status" role="status"></p>
+      <div class="reader-actions">
+        <button type="button" data-close-settings>${strings.settingsBack}</button>
+        <button type="button" class="danger-secondary" data-clear-access-key>${strings.settingsClearKey}</button>
+      </div>
+    </section>
+  `
+
+  root.addEventListener('submit', event => {
+    const form = (event.target as HTMLElement).closest<HTMLFormElement>(
+      '[data-settings-pairing-form]',
+    )
+    if (!form) return
+    event.preventDefault()
+    const input = form.elements.namedItem('access-key')
+    if (!(input instanceof HTMLInputElement)) return
+    input.setCustomValidity('')
+    if (!saveAccessKey(input.value)) {
+      input.setCustomValidity(strings.pairingInvalid)
+      input.reportValidity()
+      return
+    }
+    closeSettingsPage()
+  })
+
+  root.addEventListener('click', event => {
+    const closeSettings = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-close-settings]',
+    )
+    if (closeSettings) {
+      closeSettingsPage()
+      return
+    }
+
+    const clearKey = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-clear-access-key]',
+    )
+    if (clearKey) {
+      clearAccessKey()
+      setText(root, '#settings-status', strings.settingsKeyCleared)
+    }
+  })
+}
+
+function shouldShowPairingForm(needsPairing: boolean): boolean {
+  return needsPairing || !loadAccessKey()
+}
+
+function openSettingsPage() {
+  const url = new URL(window.location.href)
+  url.searchParams.set('settings', '1')
+  window.location.href = `${url.pathname}${url.search}${url.hash}`
+}
+
+function closeSettingsPage() {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('settings')
+  window.location.href = `${url.pathname}${url.search}${url.hash}`
 }
 
 function closeMutationConfirmation(root: HTMLElement) {

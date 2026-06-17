@@ -46,6 +46,10 @@ body {
   border-color: #b87062;
 }
 
+.reader-card[data-state='settings'] {
+  border-color: #8ed1a4;
+}
+
 .reader-topline {
   display: flex;
   align-items: center;
@@ -60,6 +64,22 @@ body {
   color: #bfe6cb;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-button {
+  width: auto;
+  min-width: 44px;
+  padding: 10px 12px;
+  border: 1px solid #5a7865;
+  color: #bfe6cb;
+  background: transparent;
+  line-height: 1;
 }
 
 .eyebrow {
