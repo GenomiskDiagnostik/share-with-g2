@@ -30,6 +30,7 @@ class LocalApiRouter(
     private val version: String = API_VERSION,
     private val authorizer: LocalApiAuthorizer = LocalApiAuthorizer { true },
     private val screenSnapshotStore: ScreenSnapshotStore = ScreenSnapshotStore(),
+    private val trustLoopback: Boolean = false,
 ) {
     private val json = Json {
         encodeDefaults = true
@@ -49,7 +50,7 @@ class LocalApiRouter(
             )
         }
 
-        if (request.path != "/health" && !authorizer.isAuthorized(request)) {
+        if (request.path != "/health" && !trustLoopback && !authorizer.isAuthorized(request)) {
             return jsonResponse(
                 status = 401,
                 value = ErrorDto("unauthorized"),
@@ -190,6 +191,7 @@ class LocalApiRouter(
         "Access-Control-Allow-Headers" to
             "Authorization, Content-Type, X-Send-To-G2-Client",
         "Access-Control-Max-Age" to "600",
+        "Access-Control-Allow-Private-Network" to "true",
     )
 
     companion object {

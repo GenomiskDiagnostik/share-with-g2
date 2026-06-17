@@ -28,6 +28,7 @@ class LocalApiRouterTest {
             "Authorization, Content-Type, X-Send-To-G2-Client",
             response.headers["Access-Control-Allow-Headers"],
         )
+        assertEquals("true", response.headers["Access-Control-Allow-Private-Network"])
         assertEquals("0.1.0-test", json(response.body)["version"]?.jsonPrimitive?.content)
     }
 
@@ -226,6 +227,24 @@ class LocalApiRouterTest {
 
         assertEquals(404, response.status)
         assertEquals("not_found", json(response.body)["error"]?.jsonPrimitive?.content)
+    }
+
+
+    @Test
+    fun `loopback trust skips authorization for protected routes`() = runBlocking {
+        val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
+        val router = LocalApiRouter(
+            store = store,
+            version = "0.1.0-test",
+            authorizer = LocalApiAuthorizer { false },
+            trustLoopback = true,
+        )
+
+        assertEquals(200, router.route(ApiRequest("GET", "/items")).status)
+        assertEquals(
+            "one",
+            json(router.route(ApiRequest("GET", "/items/one")).body)["id"]?.jsonPrimitive?.content,
+        )
     }
 
     private fun router(

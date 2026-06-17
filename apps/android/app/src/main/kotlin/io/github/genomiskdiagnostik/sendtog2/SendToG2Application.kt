@@ -2,6 +2,7 @@ package io.github.genomiskdiagnostik.sendtog2
 
 import android.app.Application
 import androidx.room.Room
+import io.github.genomiskdiagnostik.sendtog2.BuildConfig
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiRouter
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiServer
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiAccessKeyStore
@@ -43,6 +44,7 @@ class SendToG2Application : Application() {
                 store = repository,
                 screenSnapshotStore = screenSnapshotStore,
                 authorizer = BearerTokenAuthorizer(accessKeyStore),
+                trustLoopback = BuildConfig.DEBUG,
             ),
         )
         applicationScope.launch { accessKeyStore.getOrCreate() }
