@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Deliver and validate version 0.1.1 with the final authenticated loopback-alias
-probe and Android selected-text sharing.
+Close the disproven packaged-WebView loopback experiment and decide whether to
+implement the proposed opt-in encrypted HTTPS relay for version 0.2.0.
 
 ## Current phase
 
@@ -12,8 +12,8 @@ Phase 3: Even Hub Shared Inbox reader slice.
 ## Active assumptions
 
 - The Android app is the persistence owner.
-- The Even Hub app first calls `http://localhost:8765` and retries
-  `http://127.0.0.1:8765` only for browser-level network failures.
+- The tested Even Hub production WebView cannot reach Android through either
+  `localhost` or numeric loopback.
 - The MVP handles text and links only.
 - Screen snapshot mode is a separate v0.2 feasibility slice; it captures one
   user-approved image and does not add image/file Sharesheet ingestion.
@@ -79,7 +79,7 @@ Automated status:
 
 ### M2 - Local API feasibility slice
 
-Status: active
+Status: complete; packaged loopback disproven
 
 Deliverables:
 
@@ -87,8 +87,10 @@ Deliverables:
 - `GET /health`. Complete.
 - `GET /items`. Complete.
 - Minimal Even Hub reachability probe. Complete.
-- Simulator and physical-device reachability result.
-- CORS contract documented; packaged cleartext behavior pending.
+- Simulator and physical-device reachability result. Complete: packaged
+  physical loopback is blocked before requests reach Android.
+- CORS contract documented; packaged WebView transport is blocked before any
+  request reaches Android, while the exact Even policy/browser layer is opaque.
 - Android router and real loopback HTTP tests. Complete.
 - Even Hub API validation and reachability tests. Complete.
 - GitHub Actions `.ehpk` artifact. Complete.
@@ -133,8 +135,8 @@ Automated status:
 Exit criteria:
 
 - API is reachable from the Android app process.
-- G2 WebView/local app reachability is verified or disproven.
-- A fallback ADR is created only if loopback is not viable.
+- G2 WebView/local app reachability is disproven. Complete.
+- Fallback proposal ADR-013 is documented; acceptance is pending.
 
 Physical evidence for version 0.1.0:
 
@@ -143,6 +145,15 @@ Physical evidence for version 0.1.0:
 - Numeric loopback was therefore blocked before Android routing, CORS, or auth.
 - ADR-012 defines the final `localhost` plus numeric-loopback alias probe before
   an HTTPS relay is considered.
+
+Physical evidence for version 0.1.1:
+
+- The pairing key could be stored in the Even Hub app.
+- Even Hub still reported no local connection after refresh and retry.
+- Android self-test passed with API version 0.1.1.
+- Android diagnostics still recorded no Even Hub request for either alias.
+- Pairing/auth is not the blocker; the WebView transport is blocked before the
+  Android socket.
 
 ### M3 - Even Hub Shared Inbox vertical slice
 
@@ -252,7 +263,7 @@ Exit criteria:
 
 ## Open decisions
 
-- Whether Even Hub WebView can reach the `localhost` alias in version 0.1.1.
+- Whether to accept ADR-013 and which HTTPS relay deployment should be used.
 - Whether v0.2 should add undo after confirmed deletion.
 - Whether read/unread should gain filters or automatic "mark read when opened"
   behavior.
@@ -262,8 +273,8 @@ Exit criteria:
 
 ## Immediate next task
 
-Install version 0.1.1 artifacts from Android run `27828122992` and Even Hub run
-`27828122995`, then run the physical `localhost` alias probe. Also validate
-selected text -> `Send to G2` from at
-least two compatible Android apps. If Android still records no Even Hub request,
-supersede the local transport ADR with an explicit HTTPS relay design.
+Choose whether to accept ADR-013 and provide the HTTPS relay deployment target,
+domain, ownership, and retention policy. If accepted, implement relay mode as
+version 0.2.0 with explicit opt-in and end-to-end encrypted payloads. Continue
+separate physical validation of selected text -> `Send to G2` from at least two
+compatible Android apps.
