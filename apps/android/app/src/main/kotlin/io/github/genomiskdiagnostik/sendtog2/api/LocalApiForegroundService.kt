@@ -110,6 +110,8 @@ class LocalApiForegroundService : Service() {
             "io.github.genomiskdiagnostik.sendtog2.action.STOP_LOCAL_API"
 
         fun start(context: Context) {
+            val application = context.applicationContext as SendToG2Application
+            application.localApiServer.start()
             ContextCompat.startForegroundService(
                 context,
                 Intent(context, LocalApiForegroundService::class.java),

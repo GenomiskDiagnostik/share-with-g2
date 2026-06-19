@@ -17,6 +17,9 @@ will still exist when Even Hub performs its request.
 - Run the existing loopback HTTP server inside a foreground service with the
   Android `dataSync` service type.
 - Start the service only from a user-visible app or Sharesheet activity.
+- Bind the loopback socket synchronously in that user-visible start path before
+  handing lifecycle ownership to the foreground service, so the API is ready
+  when the activity reports a running connection.
 - Use a low-importance, ongoing notification that explains the local
   connection and provides an explicit stop action.
 - Return `START_STICKY` so Android can recreate the service after process
