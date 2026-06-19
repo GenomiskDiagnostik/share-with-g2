@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Ship Even Hub version 0.1.3 with a native G2 inbox menu, stable page-boundary
-scrolling, and pairing controls only under settings.
+Ship version 0.2.0 with repaired screen-image capture and explicitly consented
+low-FPS app/display sharing at 1,000 or 500 ms intervals.
 
 ## Current phase
 
@@ -15,8 +15,9 @@ Phase 3: Even Hub Shared Inbox reader slice.
 - The tested Even Hub production WebView reaches Android through loopback
   WebSocket; HTTP Fetch remains blocked on both loopback aliases.
 - The MVP handles text and links only.
-- Screen snapshot mode is a separate v0.2 feasibility slice; it captures one
-  user-approved image and does not add image/file Sharesheet ingestion.
+- Low-FPS screen sharing is a separate v0.2 feasibility slice. It refreshes the
+  latest in-memory image every 1,000 or 500 ms during one user-approved Android
+  MediaProjection session and does not add image/file Sharesheet ingestion.
 - Android notifications provide immediate previews where notification
   permission and Even notification mirroring are enabled.
 - User-facing language follows the Android or Even Hub runtime locale.
@@ -113,7 +114,7 @@ Automated status:
   GitHub Actions.
 - Android unit tests, lint, APK build, and emulator instrumentation pass
   locally or in GitHub Actions.
-- 56 Android unit tests cover parser, persistence, link extraction, API
+- 58 Android unit tests cover parser, persistence, link extraction, API
   routing, authenticated mutations, read-state updates, screen snapshot sizing
   and routing, restart, self-test, and bounded request diagnostics locally.
 - Previous version 0.1.1 Even Hub workflow run for `56c1f04`:
@@ -182,8 +183,8 @@ Deliverables:
 - Clear all with deliberate phone-side confirmation. Complete locally.
 - Manual and periodic inbox refresh. Complete locally.
 - Mark current item read/unread. Complete locally as a v0.2 candidate.
-- Separate screen snapshot mode using the Even Hub image container API.
-  Complete locally; physical G2 image rendering pending.
+- Separate low-FPS screen sharing mode using the Even Hub image container API.
+  Complete locally; physical G2 update-rate validation pending.
 - Explicit browser/simulator demo mode. Complete.
 - Danish and English reader copy. Complete.
 - Pagination, reader state, rendering, locale, and API tests. Complete locally.
@@ -197,7 +198,7 @@ Deliverables:
 
 Automated status:
 
-- 46 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+- 47 Even Hub test cases cover API validation, WebSocket fallback, native-menu
   paging, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   rendering, screen snapshot state, reachability, and locale selection. The current
@@ -239,7 +240,7 @@ Exit criteria:
 ## Accepted implementation decisions
 
 - Android application ID: `io.github.genomiskdiagnostik.sendtog2`.
-- Android version: `0.1.2` (`versionCode` 3).
+- Android version: `0.2.0` (`versionCode` 4).
 - Android min SDK 26; compile and target SDK 36.
 - JDK 17, Gradle 8.13, AGP 8.13.2, and Kotlin 2.3.21.
 - HTML shares flatten to sanitized plain text.
@@ -249,7 +250,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.1.3`.
+- Even Hub package version: `0.2.0`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
 - The local API is owned by a visible `dataSync` foreground service started
@@ -279,9 +280,10 @@ Exit criteria:
   boolean-only body.
 - Even Hub polls the local inbox periodically and offers manual refresh while
   preserving the current selection when possible.
-- Screen snapshot mode uses Android MediaProjection for one explicit frame,
+- Screen sharing uses one explicit Android MediaProjection consent session,
   stores only the latest in-memory PNG, and exposes it through authenticated
-  `GET /screen-snapshot`.
+  `GET /screen-snapshot`. Android offers 1,000 and 500 ms intervals and Even Hub
+  skips duplicate frame IDs while polling without overlapping requests.
 
 ## Open decisions
 
@@ -290,13 +292,13 @@ Exit criteria:
 - Whether v0.2 should add undo after confirmed deletion.
 - Whether read/unread should gain filters or automatic "mark read when opened"
   behavior.
-- Whether physical G2 image-container behavior is good enough for screen
-  snapshot release.
-- Whether a later screen feature should be OCR-first or low-FPS image refresh.
+- Whether physical G2 image-container behavior and 500 ms update load are good
+  enough for low-FPS screen-sharing release.
+- Whether a later screen feature should add OCR alongside low-FPS images.
 
 ## Immediate next task
 
-Complete the version 0.1.3 navigation implementation and artifacts, then
-physically validate native list selection, reader page boundaries, and return
-to menu. Continue separate validation of selected text -> `Send to G2` from at
-least two compatible Android apps.
+Complete version 0.2.0 low-FPS screen sharing and artifacts, then physically
+validate app/display selection, Stop behavior, orientation, 1,000/500 ms image
+updates, heat, and battery use. Continue separate validation of selected text
+to `Send to G2` from at least two compatible Android apps.

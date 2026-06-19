@@ -8,6 +8,7 @@ const labels = {
   read: 'Read',
   previous: 'Previous list',
   next: 'Next list',
+  screenSharing: 'Screen sharing',
 }
 
 describe('inbox menu', () => {
@@ -18,10 +19,11 @@ describe('inbox menu', () => {
     ], 0, labels)
 
     expect(page.entries.map(entry => entry.label)).toEqual([
+      'Screen sharing',
       '1. [New] Same title',
       '2. [Read] Same title',
     ])
-    expect(findInboxMenuEntry(page, page.entries[1]?.label)).toMatchObject({
+    expect(findInboxMenuEntry(page, page.entries[2]?.label)).toMatchObject({
       kind: 'item',
       itemIndex: 1,
     })
@@ -35,8 +37,9 @@ describe('inbox menu', () => {
 
     expect(first.entries).toHaveLength(19)
     expect(middle.entries).toHaveLength(20)
-    expect(last.entries).toHaveLength(5)
-    expect(middle.entries[0]?.kind).toBe('previous-page')
+    expect(last.entries).toHaveLength(8)
+    expect(middle.entries[0]?.kind).toBe('screen-sharing')
+    expect(middle.entries[1]?.kind).toBe('previous-page')
     expect(middle.entries.at(-1)?.kind).toBe('next-page')
   })
 
@@ -49,7 +52,7 @@ describe('inbox menu', () => {
   it('bounds item labels to the SDK limit', () => {
     const page = buildInboxMenu([item('one', 'x'.repeat(100))], 0, labels)
 
-    expect(page.entries[0]?.label.length).toBeLessThanOrEqual(64)
+    expect(page.entries[1]?.label.length).toBeLessThanOrEqual(64)
   })
 })
 

@@ -67,6 +67,7 @@ export type AppStrings = {
   snapshotEmpty: string
   snapshotReady: string
   snapshotRefresh: string
+  snapshotOpenSharing: string
   snapshotOpenInbox: string
   snapshotHelp: string
   snapshotImageAlt: string
@@ -150,13 +151,14 @@ const strings: Record<SupportedLocale, AppStrings> = {
     refreshSuccess: 'Indbakken er opdateret.',
     refreshFailure: 'Indbakken kunne ikke opdateres lige nu.',
     readMutationFailure: 'Læst-status kunne ikke opdateres. Prøv igen.',
-    snapshotTitle: 'Skærmbillede',
+    snapshotTitle: 'Skærmdeling',
     snapshotLoading: 'Henter seneste skærmbillede...',
-    snapshotEmpty: 'Tag et skærmbillede i Android-appen først.',
-    snapshotReady: 'Seneste skærmbillede er klar til brillerne.',
-    snapshotRefresh: 'Opdatér skærmbillede',
+    snapshotEmpty: 'Start skærmdeling i Android-appen først.',
+    snapshotReady: 'Skærmbilledet opdateres automatisk på brillerne.',
+    snapshotRefresh: 'Opdatér nu',
+    snapshotOpenSharing: 'Åbn skærmdeling',
     snapshotOpenInbox: 'Åbn indbakke',
-    snapshotHelp: 'Brug Android-appen til at tage et nyt skærmbillede.',
+    snapshotHelp: 'Start og stop delingen i Android-appen.',
     snapshotImageAlt: 'Seneste skærmbillede',
     snapshotMeta: (width, height) => `${width}×${height} billede`,
     mutationCancel: 'Annuller',
@@ -236,13 +238,14 @@ const strings: Record<SupportedLocale, AppStrings> = {
     refreshSuccess: 'Inbox refreshed.',
     refreshFailure: 'The inbox could not be refreshed right now.',
     readMutationFailure: 'Read status could not be updated. Try again.',
-    snapshotTitle: 'Screen snapshot',
+    snapshotTitle: 'Screen sharing',
     snapshotLoading: 'Loading latest screen snapshot...',
-    snapshotEmpty: 'Capture a screen snapshot in the Android app first.',
-    snapshotReady: 'Latest screen snapshot is ready for the glasses.',
-    snapshotRefresh: 'Refresh snapshot',
+    snapshotEmpty: 'Start screen sharing in the Android app first.',
+    snapshotReady: 'The screen image updates automatically on the glasses.',
+    snapshotRefresh: 'Refresh now',
+    snapshotOpenSharing: 'Open screen sharing',
     snapshotOpenInbox: 'Open inbox',
-    snapshotHelp: 'Use the Android app to capture a new screen snapshot.',
+    snapshotHelp: 'Start and stop sharing in the Android app.',
     snapshotImageAlt: 'Latest screen snapshot',
     snapshotMeta: (width, height) => `${width}×${height} image`,
     mutationCancel: 'Cancel',

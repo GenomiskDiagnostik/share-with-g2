@@ -4,7 +4,7 @@ import { renderSnapshot, type SnapshotState } from './renderSnapshot'
 describe('renderSnapshot', () => {
   it('renders localized loading and empty states', () => {
     expect(renderSnapshot({ status: 'loading' }, 'da').body).toContain('Henter')
-    expect(renderSnapshot({ status: 'empty' }, 'en').body).toContain('Capture')
+    expect(renderSnapshot({ status: 'empty' }, 'en').body).toContain('Start')
   })
 
   it('renders pairing on unauthorized errors', () => {
@@ -34,6 +34,6 @@ describe('renderSnapshot', () => {
 
     expect(view.meta).toBe('288×144 image')
     expect(view.imageSrc).toBe('data:image/png;base64,abc123')
-    expect(view.glassText).toContain('Screen snapshot')
+    expect(view.glassText).toContain('Screen sharing')
   })
 })

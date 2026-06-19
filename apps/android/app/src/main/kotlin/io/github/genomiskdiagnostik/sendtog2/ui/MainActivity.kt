@@ -59,6 +59,8 @@ import io.github.genomiskdiagnostik.sendtog2.api.LocalApiState
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
 import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshot
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenShareIntervals
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenShareStatus
 import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshotService
 import java.time.Instant
 import java.time.ZoneId
@@ -76,6 +78,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private var notificationPermissionGranted by mutableStateOf(true)
+    private var pendingScreenShareIntervalMillis = ScreenShareIntervals.DEFAULT_MILLIS
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -86,7 +89,12 @@ class MainActivity : ComponentActivity() {
     ) { result ->
         val data = result.data
         if (result.resultCode == Activity.RESULT_OK && data != null) {
-            ScreenSnapshotService.start(this, result.resultCode, data)
+            ScreenSnapshotService.start(
+                this,
+                result.resultCode,
+                data,
+                pendingScreenShareIntervalMillis,
+            )
             Toast.makeText(
                 this,
                 R.string.screen_snapshot_capture_started,
@@ -116,6 +124,8 @@ class MainActivity : ComponentActivity() {
                 val selfTest by viewModel.selfTest.collectAsStateWithLifecycle()
                 val accessKey by viewModel.accessKey.collectAsStateWithLifecycle()
                 val screenSnapshot by viewModel.screenSnapshot.collectAsStateWithLifecycle()
+                val screenShareStatus by
+                    viewModel.screenShareStatus.collectAsStateWithLifecycle()
                 Surface(modifier = Modifier.fillMaxSize()) {
                     InboxScreen(
                         items = items,
@@ -124,6 +134,7 @@ class MainActivity : ComponentActivity() {
                         selfTest = selfTest,
                         accessKey = accessKey,
                         screenSnapshot = screenSnapshot,
+                        screenShareStatus = screenShareStatus,
                         notificationPermissionGranted = notificationPermissionGranted,
                         onRequestNotificationPermission = ::requestNotificationPermission,
                         onRunSelfTest = viewModel::runLocalApiSelfTest,
@@ -131,6 +142,7 @@ class MainActivity : ComponentActivity() {
                         onCopyAccessKey = ::copyAccessKey,
                         onRotateAccessKey = viewModel::rotateAccessKey,
                         onCaptureScreenSnapshot = ::requestScreenSnapshot,
+                        onStopScreenShare = { ScreenSnapshotService.stop(this) },
                         onClearScreenSnapshot = viewModel::clearScreenSnapshot,
                         onUpdateRead = viewModel::updateRead,
                         onDelete = viewModel::delete,
@@ -159,7 +171,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestScreenSnapshot() {
+    private fun requestScreenSnapshot(intervalMillis: Long) {
+        if (!hasNotificationPermission()) {
+            requestNotificationPermission()
+            return
+        }
+        pendingScreenShareIntervalMillis = ScreenShareIntervals.normalize(intervalMillis)
         val manager = getSystemService(MediaProjectionManager::class.java)
         screenCaptureLauncher.launch(manager.createScreenCaptureIntent())
     }
@@ -181,13 +198,15 @@ private fun InboxScreen(
     selfTest: LocalApiSelfTestState,
     accessKey: String,
     screenSnapshot: ScreenSnapshot?,
+    screenShareStatus: ScreenShareStatus,
     notificationPermissionGranted: Boolean,
     onRequestNotificationPermission: () -> Unit,
     onRunSelfTest: () -> Unit,
     onRestartApi: () -> Unit,
     onCopyAccessKey: (String) -> Unit,
     onRotateAccessKey: () -> Unit,
-    onCaptureScreenSnapshot: () -> Unit,
+    onCaptureScreenSnapshot: (Long) -> Unit,
+    onStopScreenShare: () -> Unit,
     onClearScreenSnapshot: () -> Unit,
     onUpdateRead: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
@@ -225,7 +244,6 @@ private fun InboxScreen(
             apiDiagnostics = apiDiagnostics,
             selfTest = selfTest,
             accessKey = accessKey,
-            screenSnapshot = screenSnapshot,
             notificationPermissionGranted = notificationPermissionGranted,
             onBack = { showSettings = false },
             onRequestNotificationPermission = onRequestNotificationPermission,
@@ -233,8 +251,6 @@ private fun InboxScreen(
             onRestartApi = onRestartApi,
             onCopyAccessKey = onCopyAccessKey,
             onRotateAccessKey = onRotateAccessKey,
-            onCaptureScreenSnapshot = onCaptureScreenSnapshot,
-            onClearScreenSnapshot = onClearScreenSnapshot,
         )
         return
     }
@@ -278,7 +294,11 @@ private fun InboxScreen(
         item {
             ScreenSnapshotCard(
                 snapshot = screenSnapshot,
+                sharing = screenShareStatus,
+                notificationPermissionGranted = notificationPermissionGranted,
                 onCapture = onCaptureScreenSnapshot,
+                onStop = onStopScreenShare,
+                onRequestNotificationPermission = onRequestNotificationPermission,
                 onClear = onClearScreenSnapshot,
             )
         }
@@ -318,7 +338,6 @@ private fun SettingsScreen(
     apiDiagnostics: LocalApiDiagnosticsState,
     selfTest: LocalApiSelfTestState,
     accessKey: String,
-    screenSnapshot: ScreenSnapshot?,
     notificationPermissionGranted: Boolean,
     onBack: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
@@ -326,8 +345,6 @@ private fun SettingsScreen(
     onRestartApi: () -> Unit,
     onCopyAccessKey: (String) -> Unit,
     onRotateAccessKey: () -> Unit,
-    onCaptureScreenSnapshot: () -> Unit,
-    onClearScreenSnapshot: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -378,7 +395,11 @@ private fun SettingsScreen(
 @Composable
 private fun ScreenSnapshotCard(
     snapshot: ScreenSnapshot?,
-    onCapture: () -> Unit,
+    sharing: ScreenShareStatus,
+    notificationPermissionGranted: Boolean,
+    onCapture: (Long) -> Unit,
+    onStop: () -> Unit,
+    onRequestNotificationPermission: () -> Unit,
     onClear: () -> Unit,
 ) {
     Card {
@@ -395,6 +416,24 @@ private fun ScreenSnapshotCard(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
+                text = if (sharing.active) {
+                    stringResource(
+                        R.string.screen_snapshot_active,
+                        stringResource(
+                            if (sharing.intervalMillis == ScreenShareIntervals.FAST_MILLIS) {
+                                R.string.screen_snapshot_interval_fast
+                            } else {
+                                R.string.screen_snapshot_interval_default
+                            },
+                        ),
+                    )
+                } else {
+                    stringResource(R.string.screen_snapshot_inactive)
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
                 text = snapshot?.let {
                     stringResource(
                         R.string.screen_snapshot_latest,
@@ -406,10 +445,36 @@ private fun ScreenSnapshotCard(
                 style = MaterialTheme.typography.bodySmall,
             )
             Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onCapture) {
-                    Text(stringResource(R.string.screen_snapshot_capture))
+            if (!notificationPermissionGranted) {
+                Text(
+                    text = stringResource(R.string.screen_snapshot_notification_required),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onRequestNotificationPermission) {
+                    Text(stringResource(R.string.grant_permission))
                 }
+            } else if (sharing.active) {
+                Button(onClick = onStop) {
+                    Text(stringResource(R.string.screen_snapshot_stop))
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { onCapture(ScreenShareIntervals.DEFAULT_MILLIS) },
+                    ) {
+                        Text(stringResource(R.string.screen_snapshot_start_default))
+                    }
+                    OutlinedButton(
+                        onClick = { onCapture(ScreenShareIntervals.FAST_MILLIS) },
+                    ) {
+                        Text(stringResource(R.string.screen_snapshot_start_fast))
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     onClick = onClear,
                     enabled = snapshot != null,

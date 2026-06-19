@@ -26,8 +26,9 @@ Send to G2 handles user-shared content that may include private messages, links,
   confirmation. Packaged WebView validation remains a release gate.
 - Read/unread updates require the same Bearer key as reads but are
   non-destructive and do not require confirmation.
-- Screen snapshots require Android MediaProjection consent and the same Bearer
-  key before Even Hub can fetch the latest snapshot.
+- Screen sharing requires Android MediaProjection consent, a visible foreground
+  notification with Stop action, and the same Bearer key before Even Hub can
+  fetch the latest in-memory frame.
 - Local API diagnostics retain only bounded method, path, client marker,
   origin, user-agent, loopback address, timestamp, and request count in memory.
 - Never include query strings, request bodies, response bodies, or shared item
@@ -91,5 +92,5 @@ after JavaScript execution therefore remain URL-only.
 | Accidental cloud exposure | No cloud dependency in v0.1 |
 | Destructive G2 input misfire | G2 gestures cannot mutate; phone WebView requires explicit confirmation |
 | Read-state drift between surfaces | Even Hub periodically refreshes from Android, which remains the source of truth |
-| Accidental ongoing screen capture | Capture one snapshot per system-consented session; foreground service stops after one frame or timeout |
+| Accidental ongoing screen capture | Require system consent and explicit start; keep an ongoing foreground notification with Stop action; stop on projection revocation or service destruction |
 | Screen snapshot persists sensitive content | Keep snapshots in memory only and provide a clear action in Android |

@@ -138,8 +138,8 @@ Responses:
 
 ### GET /screen-snapshot
 
-Returns the latest in-memory, user-approved Android screen snapshot. Requires
-the Bearer access key.
+Returns the latest in-memory frame from a user-approved Android MediaProjection
+session. Requires the Bearer access key.
 
 Responses:
 
@@ -148,7 +148,9 @@ Responses:
 
 The image is a base64-encoded PNG scaled to the Even Hub image-container limit
 of at most `288 × 144`. Snapshots are not stored in Room and disappear when the
-Android process is killed or the user clears the snapshot.
+Android process is killed or the user clears the image. During low-FPS sharing,
+each replacement frame receives a new ID and timestamp while the schema remains
+unchanged.
 
 ## Implemented surface
 

@@ -12,6 +12,7 @@ import io.github.genomiskdiagnostik.sendtog2.data.SharedItemStore
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshot
 import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshotStore
+import io.github.genomiskdiagnostik.sendtog2.screen.ScreenShareStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,6 +47,12 @@ class MainViewModel(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = null,
     )
+    val screenShareStatus: StateFlow<ScreenShareStatus> =
+        screenSnapshotStore.observeSharing().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = ScreenShareStatus(),
+        )
 
     init {
         viewModelScope.launch(Dispatchers.IO) {

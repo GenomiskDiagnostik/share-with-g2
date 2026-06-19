@@ -6,12 +6,14 @@ export type InboxMenuLabels = {
   read: string
   previous: string
   next: string
+  screenSharing: string
 }
 
 export type InboxMenuEntry =
   | { kind: 'item'; itemIndex: number; label: string }
   | { kind: 'previous-page'; label: string }
   | { kind: 'next-page'; label: string }
+  | { kind: 'screen-sharing'; label: string }
 
 export type InboxMenuPage = {
   pageIndex: number
@@ -19,7 +21,7 @@ export type InboxMenuPage = {
   entries: InboxMenuEntry[]
 }
 
-const ITEMS_PER_PAGE = 18
+const ITEMS_PER_PAGE = 17
 const MAX_LABEL_LENGTH = 64
 
 export function buildInboxMenu(
@@ -49,6 +51,7 @@ export function buildInboxMenu(
   if (pageIndex < pageCount - 1) {
     entries.push({ kind: 'next-page', label: labels.next })
   }
+  entries.unshift({ kind: 'screen-sharing', label: labels.screenSharing })
 
   return { pageIndex, pageCount, entries }
 }

@@ -37,6 +37,7 @@ import {
 import { ReaderScrollGate } from './inbox/readerScrollGate'
 import { DEMO_ITEMS, renderReader, type ReaderView } from './inbox/renderReader'
 import { renderSnapshot, type SnapshotState, type SnapshotView } from './snapshot/renderSnapshot'
+import { decodeBase64Image } from './snapshot/imageData'
 import { getStrings, resolveLocale } from './strings'
 import './style.css'
 
@@ -51,6 +52,7 @@ const SNAPSHOT_TEXT_CONTAINER_NAME = 'snapshotText'
 const SNAPSHOT_IMAGE_CONTAINER_ID = 3
 const SNAPSHOT_IMAGE_CONTAINER_NAME = 'snapshotImage'
 const REFRESH_INTERVAL_MS = 10_000
+const SCREEN_SHARE_REFRESH_INTERVAL_MS = 500
 type MutationAction = 'delete-current' | 'clear'
 type GlassesMode = 'menu' | 'reader'
 
@@ -86,7 +88,10 @@ async function main() {
     renderWeb(root, state, view, strings, demoMode ? strings.demoMode : undefined)
     if (!bridge) return
 
-    if (state.status === 'ready' && glassesMode === 'menu') {
+    if (
+      (state.status === 'ready' || state.status === 'empty') &&
+      glassesMode === 'menu'
+    ) {
       const menu = createInboxMenu(state, menuPageIndex, strings)
       menuPageIndex = menu.pageIndex
       const key = `menu:${menu.entries.map(entry => entry.label).join('|')}`
@@ -135,6 +140,10 @@ async function main() {
   }
 
   const handleMenuEntry = async (entry: InboxMenuEntry) => {
+    if (entry.kind === 'screen-sharing') {
+      openSnapshotMode(demoMode)
+      return
+    }
     if (entry.kind === 'item') {
       await selectItem(entry.itemIndex)
       return
@@ -295,20 +304,26 @@ async function runScreenSnapshotMode(
   let bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>> | undefined
   let bridgeReady = false
   let client: LocalApiClient | undefined
+  let loadPromise: Promise<void> | undefined
+  let renderedSnapshotId: string | undefined
+  let renderedGlassText = ''
 
   const render = async () => {
     const view = renderSnapshot(state, locale)
     renderSnapshotWeb(root, view, strings, demoMode ? strings.demoMode : undefined)
     if (bridge && bridgeReady) {
-      await bridge.textContainerUpgrade(
-        new TextContainerUpgrade({
-          containerID: SNAPSHOT_TEXT_CONTAINER_ID,
-          containerName: SNAPSHOT_TEXT_CONTAINER_NAME,
-          contentOffset: 0,
-          contentLength: view.glassText.length,
-          content: view.glassText,
-        }),
-      )
+      if (view.glassText !== renderedGlassText) {
+        await bridge.textContainerUpgrade(
+          new TextContainerUpgrade({
+            containerID: SNAPSHOT_TEXT_CONTAINER_ID,
+            containerName: SNAPSHOT_TEXT_CONTAINER_NAME,
+            contentOffset: 0,
+            contentLength: view.glassText.length,
+            content: view.glassText,
+          }),
+        )
+        renderedGlassText = view.glassText
+      }
       await updateSnapshotImage(bridge, state)
     }
   }
@@ -318,20 +333,40 @@ async function runScreenSnapshotMode(
     await render()
   }
 
-  const loadSnapshot = async (manual: boolean) => {
+  const performLoad = async () => {
     try {
       if (demoMode) {
-        await setState({ status: 'ready', snapshot: DEMO_SNAPSHOT })
+        if (renderedSnapshotId !== DEMO_SNAPSHOT.id) {
+          await setState({ status: 'ready', snapshot: DEMO_SNAPSHOT })
+          renderedSnapshotId = DEMO_SNAPSHOT.id
+        }
         return
       }
       if (!client) return
-      await setState({ status: 'ready', snapshot: await client.screenSnapshot() })
+      const snapshot = await client.screenSnapshot()
+      if (snapshot.id === renderedSnapshotId) return
+      await setState({ status: 'ready', snapshot })
+      renderedSnapshotId = snapshot.id
     } catch (error) {
       if (error instanceof ApiStatusError && error.status === 404) {
-        await setState({ status: 'empty' })
+        renderedSnapshotId = undefined
+        if (state.status !== 'empty') await setState({ status: 'empty' })
         return
       }
       await setState({ status: 'error', reason: classifyFailure(error) })
+    }
+  }
+
+  const loadSnapshot = async (manual: boolean) => {
+    if (!loadPromise) {
+      loadPromise = performLoad()
+      const currentLoad = loadPromise
+      void currentLoad.finally(() => {
+        if (loadPromise === currentLoad) loadPromise = undefined
+      })
+    }
+    try {
+      await loadPromise
     } finally {
       if (manual) {
         const refresh = root.querySelector<HTMLButtonElement>('[data-refresh-snapshot]')
@@ -385,7 +420,12 @@ async function runScreenSnapshotMode(
       }),
     )
     bridgeReady = true
-    bindSnapshotBridgeActions(bridge, () => loadSnapshot(true))
+    renderedGlassText = view.glassText
+    bindSnapshotBridgeActions(
+      bridge,
+      () => loadSnapshot(true),
+      () => openInboxMode(demoMode),
+    )
   } catch {
     root.dataset.bridge = 'unavailable'
   }
@@ -406,7 +446,7 @@ async function runScreenSnapshotMode(
     await loadSnapshot(false)
     window.setInterval(() => {
       void loadSnapshot(false)
-    }, REFRESH_INTERVAL_MS)
+    }, SCREEN_SHARE_REFRESH_INTERVAL_MS)
   } catch (error) {
     await setState({ status: 'error', reason: classifyFailure(error) })
   }
@@ -484,7 +524,7 @@ function bindSnapshotWebActions(
       'button[data-open-inbox]',
     )
     if (openInbox) {
-      window.location.href = demoMode ? '?demo=1' : window.location.pathname
+      openInboxMode(demoMode)
       return
     }
 
@@ -514,7 +554,7 @@ async function updateSnapshotImage(
     new ImageRawDataUpdate({
       containerID: SNAPSHOT_IMAGE_CONTAINER_ID,
       containerName: SNAPSHOT_IMAGE_CONTAINER_NAME,
-      imageData: state.snapshot.imageBase64,
+      imageData: decodeBase64Image(state.snapshot.imageBase64),
     }),
   )
   if (!ImageRawDataUpdateResult.isSuccess(result)) {
@@ -546,6 +586,7 @@ function createInboxMenu(
       read: strings.readStateRead,
       previous: strings.menuPrevious,
       next: strings.menuNext,
+      screenSharing: strings.snapshotTitle,
     },
   )
 }
@@ -643,6 +684,7 @@ function renderWeb(
         <button type="button" data-action="previous-page" id="previous-page"></button>
         <button type="button" data-action="next-page" id="next-page"></button>
         <button type="button" data-refresh id="refresh-items"></button>
+        <button type="button" data-open-snapshot id="open-snapshot"></button>
         <button type="button" data-open-settings id="pairing-settings" hidden></button>
         <button type="button" data-reload id="retry" hidden></button>
       </div>
@@ -672,6 +714,7 @@ function renderWeb(
   setText(root, '#previous-page', strings.previousPage)
   setText(root, '#next-page', strings.nextPage)
   setText(root, '#refresh-items', strings.refresh)
+  setText(root, '#open-snapshot', strings.snapshotOpenSharing)
   setText(root, '#retry', strings.retry)
   setText(root, '#pairing-settings', strings.openSettings)
   setText(root, '#delete-current', strings.deleteCurrent)
@@ -839,6 +882,15 @@ function bindWebActions(
     )
     if (openSettings) {
       openSettingsPage()
+      return
+    }
+
+    const openSnapshot = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-open-snapshot]',
+    )
+    if (openSnapshot) {
+      const demoMode = new URLSearchParams(window.location.search).get('demo') === '1'
+      openSnapshotMode(demoMode)
       return
     }
 
@@ -1049,6 +1101,7 @@ function bindBridgeActions(
 function bindSnapshotBridgeActions(
   bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>>,
   refresh: () => Promise<void>,
+  openInbox: () => void,
 ) {
   const unsubscribe = bridge.onEvenHubEvent(event => {
     const sysType = event.sysEvent?.eventType ?? null
@@ -1057,7 +1110,7 @@ function bindSnapshotBridgeActions(
     if (eventType === OsEventTypeList.CLICK_EVENT) {
       void refresh()
     } else if (eventType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
-      void bridge.shutDownPageContainer(1)
+      openInbox()
     } else if (
       sysType === OsEventTypeList.SYSTEM_EXIT_EVENT ||
       sysType === OsEventTypeList.ABNORMAL_EXIT_EVENT
@@ -1065,6 +1118,14 @@ function bindSnapshotBridgeActions(
       unsubscribe()
     }
   })
+}
+
+function openSnapshotMode(demoMode: boolean) {
+  window.location.href = demoMode ? '?mode=snapshot&demo=1' : '?mode=snapshot'
+}
+
+function openInboxMode(demoMode: boolean) {
+  window.location.href = demoMode ? '?demo=1' : window.location.pathname
 }
 
 function classifyFailure(

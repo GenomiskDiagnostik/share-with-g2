@@ -75,12 +75,13 @@ For v0.1 only `text` and `url` are persisted as active item types.
 
 Post-MVP feasibility:
 
-- Android can capture one user-approved screen snapshot through MediaProjection.
-- The latest snapshot is kept in memory only, not persisted as an inbox item.
+- Android can run a user-approved low-FPS screen-sharing session through
+  MediaProjection at a 1,000 or 500 ms image interval.
+- The latest image is kept in memory only, not persisted as an inbox item.
 - Even Hub can fetch the latest snapshot through the authenticated local API
   and attempt to render it through the SDK image-container API.
-- This is not live video mirroring and does not add image/file Sharesheet
-  ingestion.
+- This is not video-rate mirroring, audio capture, or remote control and does
+  not add image/file Sharesheet ingestion.
 
 ### Notification
 
