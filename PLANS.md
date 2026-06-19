@@ -112,18 +112,18 @@ Automated status:
 - 54 Android unit tests cover parser, persistence, link extraction, API
   routing, authenticated mutations, read-state updates, screen snapshot sizing
   and routing, restart, self-test, and bounded request diagnostics locally.
-- Current Even Hub workflow run for `64bdbb6`:
-  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27819933849`.
-- Current Android workflow run for `64bdbb6`:
-  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27819712631`.
+- Current Even Hub workflow run for `56c1f04`:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27828122995`.
+- Current Android workflow run for `56c1f04`:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27828122992`.
 - Artifacts: Even Hub package, debug APKs, Android build reports, and Android
   instrumentation reports.
-- The current GitHub artifacts for `64bdbb6` were downloaded and inspected on
-  2026-06-19. Android reports contain 54 passing JVM tests, 8 passing
+- The current GitHub artifacts for `56c1f04` were downloaded and inspected on
+  2026-06-19. Android reports contain 54 passing JVM tests, 9 passing
   instrumented tests,
   no failures, and lint warnings only. The packaged Even Hub JavaScript contains
-  the loopback URL, client marker, pairing storage, authorization, and screen
-  snapshot routes expected at `64bdbb6`.
+  both loopback aliases, client marker, pairing storage, authorization, and
+  screen snapshot routes expected at `56c1f04`.
 - The Android diagnostics card can now run a loopback self-test, restart the
   server, count requests, and show the last identified Even Hub origin and
   user-agent without recording inbox content.
@@ -262,7 +262,8 @@ Exit criteria:
 
 ## Immediate next task
 
-Build version 0.1.1 artifacts, install both packages, and run the physical
-`localhost` alias probe. Also validate selected text -> `Send to G2` from at
+Install version 0.1.1 artifacts from Android run `27828122992` and Even Hub run
+`27828122995`, then run the physical `localhost` alias probe. Also validate
+selected text -> `Send to G2` from at
 least two compatible Android apps. If Android still records no Even Hub request,
 supersede the local transport ADR with an explicit HTTPS relay design.
