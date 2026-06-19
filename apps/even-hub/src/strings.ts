@@ -44,6 +44,10 @@ export type AppStrings = {
     type: string,
   ) => string
   readerHelp: string
+  itemPickerTitle: string
+  menuHelp: string
+  menuPrevious: string
+  menuNext: string
   previousItem: string
   nextItem: string
   previousPage: string
@@ -107,7 +111,7 @@ const strings: Record<SupportedLocale, AppStrings> = {
     readerLoading: 'Henter delte elementer...',
     readerEmpty: 'Ingen delte elementer endnu.',
     readerFailure: {
-      unauthorized: 'Indbakken skal parres med Android-appen før den kan læses.',
+      unauthorized: 'Åbn Indstillinger og gem nøglen fra Android-appen.',
       timeout: 'Den lokale indbakke svarede ikke i tide.',
       http: 'Den lokale indbakke returnerede en HTTP-fejl.',
       'invalid-response': 'Den lokale indbakke returnerede ukendte data.',
@@ -127,7 +131,11 @@ const strings: Record<SupportedLocale, AppStrings> = {
     settingsKeyCleared: 'Den gemte nøgle er ryddet.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · side ${page}/${pageCount}`,
-    readerHelp: 'Klik: næste · Scroll: side · Dobbeltklik: luk',
+    readerHelp: 'Scroll: side · Dobbeltklik: tilbage til menu',
+    itemPickerTitle: 'Vælg element',
+    menuHelp: 'Rul: vælg · Tryk: åbn · Dobbelttryk: luk',
+    menuPrevious: 'Forrige liste',
+    menuNext: 'Næste liste',
     previousItem: 'Forrige element',
     nextItem: 'Næste element',
     previousPage: 'Forrige side',
@@ -189,7 +197,7 @@ const strings: Record<SupportedLocale, AppStrings> = {
     readerLoading: 'Loading shared items...',
     readerEmpty: 'No shared items yet.',
     readerFailure: {
-      unauthorized: 'The inbox must be paired with the Android app before it can be read.',
+      unauthorized: 'Open Settings and save the key from the Android app.',
       timeout: 'The local inbox did not respond before the timeout.',
       http: 'The local inbox returned an HTTP error.',
       'invalid-response': 'The local inbox returned unknown data.',
@@ -209,7 +217,11 @@ const strings: Record<SupportedLocale, AppStrings> = {
     settingsKeyCleared: 'The saved key was cleared.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · page ${page}/${pageCount}`,
-    readerHelp: 'Click: next · Scroll: page · Double-click: close',
+    readerHelp: 'Scroll: page · Double-click: back to menu',
+    itemPickerTitle: 'Choose item',
+    menuHelp: 'Scroll: select · Click: open · Double-click: close',
+    menuPrevious: 'Previous list',
+    menuNext: 'Next list',
     previousItem: 'Previous item',
     nextItem: 'Next item',
     previousPage: 'Previous page',

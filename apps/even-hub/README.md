@@ -28,7 +28,8 @@ This directory contains the Even Hub G2 app.
   WebSocket, hostname HTTP, and numeric HTTP. It falls back only after a
   browser-level network error or timeout.
 - Runtime-validated `GET /health` and `GET /items` client.
-- Local pairing form shown when the Android API returns `401`.
+- Pairing form lives only under settings; a `401` links there without showing
+  duplicate key fields on the inbox or snapshot front page.
 - Access key persistence in WebView local storage and Bearer authorization for
   inbox reads.
 - Phone-side delete-current and clear-all controls with explicit confirmation.
@@ -37,15 +38,17 @@ This directory contains the Even Hub G2 app.
   packaged Even Hub request from its own self-test.
 - Loading, empty, failure, and ready reader states.
 - Paragraph/word-aware pagination for long text.
-- Click for next item, scroll for page movement, and double-click for safe exit.
+- Native G2 list menu for visible item selection and opening.
+- Reader scroll changes pages with boundary-bounce suppression; reader
+  double-click returns to the inbox menu.
 - Danish and English reader states selected from the WebView locale.
 - Danish remains the MVP UI language. Even Hub package metadata uses `en` as
   the required fallback because its current language enum has no `da` value.
 - Explicit `?demo=1` mode with local sample data for browser and simulator QA.
 - Explicit `?mode=snapshot` mode for the latest authenticated screen snapshot.
 - `?mode=snapshot&demo=1` mode for image-container/browser QA without Android.
-- Vitest coverage for API validation, pagination, navigation, rendering,
-  screen snapshot rendering, reachability, and locale selection.
+- Vitest coverage for API validation, native-menu paging, scroll gating,
+  pagination, navigation, rendering, screen snapshots, reachability, and locale.
 
 ## Commands
 

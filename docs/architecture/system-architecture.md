@@ -130,10 +130,13 @@ GET /items
 
 Reader input mapping:
 
-- Click: next item, wrapping to the first item.
-- Scroll up/down: previous/next page, clamped at page boundaries.
-- Double-click: request the SDK safe-exit interaction.
-- Browser controls expose previous/next item and page actions for simulator QA.
+- Native inbox list scroll: move the visible item selection.
+- Native inbox list click: open the selected item.
+- Reader scroll up/down: previous/next page with opposite-boundary bounce
+  suppression and no update at the first/final page.
+- Reader double-click: return to the native inbox list.
+- The phone WebView exposes a visible item picker plus previous/next page
+  actions for browser QA.
 
 ## Local API design
 

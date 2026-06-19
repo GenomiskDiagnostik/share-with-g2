@@ -26,7 +26,7 @@ Version 0.1 supports:
 - URL detection from shared text.
 - Local storage of shared items.
 - Android notification with short preview.
-- Even Hub Shared Inbox reader.
+- Even Hub Shared Inbox with a native G2 item menu and paginated reader.
 - Explicit same-phone pairing with a per-installation local API access key.
 - Newest-first list semantics.
 - Open/read item.

@@ -124,6 +124,45 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+.item-picker {
+  margin: 20px 0 24px;
+  border: 1px solid #365344;
+  border-radius: 16px;
+  padding: 14px;
+  background: #0f1813;
+}
+
+.item-picker[hidden] {
+  display: none;
+}
+
+.item-picker h2 {
+  margin: 0 0 12px;
+  color: #bfe6cb;
+  font-size: 1rem;
+}
+
+.item-picker-list {
+  max-height: 280px;
+  display: grid;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.item-picker-button {
+  padding: 11px 13px;
+  border: 1px solid #365344;
+  color: #d8e7dc;
+  background: #17241d;
+  text-align: left;
+}
+
+.item-picker-button[aria-current='true'] {
+  border-color: #8ed1a4;
+  color: #0b160f;
+  background: #8ed1a4;
+}
+
 .snapshot-preview {
   min-height: 180px;
   margin-top: 24px;
@@ -199,8 +238,13 @@ h1 {
 }
 
 .reader-actions [data-reload],
-.reader-actions [data-refresh] {
+.reader-actions [data-refresh],
+.reader-actions [data-pairing-settings] {
   grid-column: 1 / -1;
+}
+
+.reader-actions [hidden] {
+  display: none;
 }
 
 .mutation-status {

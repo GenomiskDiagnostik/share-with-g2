@@ -37,6 +37,19 @@ describe('reader state', () => {
     expect(previous).toMatchObject({ selectedIndex: 1, pageIndex: 0 })
   })
 
+  it('selects a menu item directly and rejects stale indexes', () => {
+    const state: ReaderState = {
+      status: 'ready',
+      items: [item('one'), item('two')],
+      selectedIndex: 0,
+      pageIndex: 1,
+    }
+
+    const selected = reduceReader(state, { type: 'select-item', index: 1 })
+    expect(selected).toMatchObject({ selectedIndex: 1, pageIndex: 0 })
+    expect(reduceReader(selected, { type: 'select-item', index: 9 })).toBe(selected)
+  })
+
   it('clamps page navigation at both ends', () => {
     const state: ReaderState = {
       status: 'ready',
@@ -46,7 +59,7 @@ describe('reader state', () => {
     }
 
     const previous = reduceReader(state, { type: 'previous-page' })
-    expect(previous).toMatchObject({ pageIndex: 0 })
+    expect(previous).toBe(state)
 
     let next: ReaderState = state
     for (let index = 0; index < 20; index += 1) {

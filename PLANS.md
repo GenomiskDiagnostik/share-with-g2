@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Implement and physically test a standards-based loopback WebSocket transport
-for version 0.1.2 without adding cloud, LAN exposure, or proprietary access.
+Ship Even Hub version 0.1.3 with a native G2 inbox menu, stable page-boundary
+scrolling, and pairing controls only under settings.
 
 ## Current phase
 
@@ -12,8 +12,8 @@ Phase 3: Even Hub Shared Inbox reader slice.
 ## Active assumptions
 
 - The Android app is the persistence owner.
-- The tested Even Hub production WebView cannot reach Android through HTTP
-  Fetch on either `localhost` or numeric loopback; WebSocket remains untested.
+- The tested Even Hub production WebView reaches Android through loopback
+  WebSocket; HTTP Fetch remains blocked on both loopback aliases.
 - The MVP handles text and links only.
 - Screen snapshot mode is a separate v0.2 feasibility slice; it captures one
   user-approved image and does not add image/file Sharesheet ingestion.
@@ -79,7 +79,7 @@ Automated status:
 
 ### M2 - Local API feasibility slice
 
-Status: active; HTTP Fetch disproven, WebSocket probe in progress
+Status: complete; loopback WebSocket physically confirmed
 
 Deliverables:
 
@@ -105,7 +105,7 @@ Deliverables:
 - Authenticated read/unread metadata route. Complete locally.
 - Authenticated latest screen snapshot route. Complete locally.
 - Loopback WebSocket adapter with HTTP fallback. Automated implementation
-  complete for version 0.1.2; physical validation pending.
+  and physical validation complete for version 0.1.2.
 
 Automated status:
 
@@ -138,7 +138,7 @@ Exit criteria:
 
 - API is reachable from the Android app process.
 - G2 WebView HTTP Fetch reachability is disproven. Complete.
-- G2 WebView loopback WebSocket reachability. Physical validation pending.
+- G2 WebView loopback WebSocket reachability. Complete on physical hardware.
 - Cloud fallback proposal ADR-013 remains proposed and is not accepted.
 
 Physical evidence for version 0.1.0:
@@ -157,6 +157,15 @@ Physical evidence for version 0.1.1:
 - Android diagnostics still recorded no Even Hub request for either alias.
 - Pairing/auth is not the blocker; the WebView transport is blocked before the
   Android socket.
+
+Physical evidence for version 0.1.2:
+
+- Even Hub successfully reached and read the Android inbox over loopback
+  WebSocket.
+- Pairing and authenticated inbox reads work on the physical phone/G2 setup.
+- Cyclic single-click item navigation is unreliable in physical use.
+- Slow scrolling can bounce from a page boundary back to the same page top or
+  previous page, motivating ADR-015.
 
 ### M3 - Even Hub Shared Inbox vertical slice
 
@@ -179,11 +188,17 @@ Deliverables:
 - Danish and English reader copy. Complete.
 - Pagination, reader state, rendering, locale, and API tests. Complete locally.
 - Dedicated unauthorized/pairing state. Complete locally.
+- Native G2 item menu using the documented list container. Complete locally
+  for version 0.1.3; physical validation pending.
+- Stable page-boundary scroll gating and no-op final-page handling. Complete
+  locally for version 0.1.3; physical validation pending.
+- Pairing input limited to the settings page. Complete and browser-validated
+  for version 0.1.3.
 
 Automated status:
 
-- 38 Even Hub test cases cover API validation, WebSocket fallback, key storage,
-  mutations,
+- 46 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+  paging, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   rendering, screen snapshot state, reachability, and locale selection. The current
   sandbox permits TypeScript typechecking; GitHub Actions remains the
@@ -234,7 +249,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.1.2`.
+- Even Hub package version: `0.1.3`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
 - The local API is owned by a visible `dataSync` foreground service started
@@ -251,8 +266,9 @@ Exit criteria:
 - Android and Even Hub select Danish or English from the runtime locale.
 - Reader body pages are capped at 700 characters, preserving paragraph or word
   boundaries where possible.
-- G2 reader input: click selects the next item, scroll moves pages, and
-  double-click opens the safe exit interaction.
+- G2 opens on a native inbox list; list scrolling selects, list click opens,
+  reader scrolling changes pages, and reader double-click returns to the menu,
+  as documented in ADR-015.
 - Public links are stored immediately, then enriched in WorkManager without
   cookies; failures retain the original URL.
 - Link retrieval blocks local/private destinations, follows at most three
@@ -280,7 +296,7 @@ Exit criteria:
 
 ## Immediate next task
 
-Install the version 0.1.2 GitHub artifacts and run physical diagnostics.
-Transport success requires Android to record `GET /even-hub-ws` from Even Hub.
-Continue separate physical validation of selected text -> `Send to G2` from at
+Complete the version 0.1.3 navigation implementation and artifacts, then
+physically validate native list selection, reader page boundaries, and return
+to menu. Continue separate validation of selected text -> `Send to G2` from at
 least two compatible Android apps.

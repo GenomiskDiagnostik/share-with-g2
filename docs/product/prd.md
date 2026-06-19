@@ -26,6 +26,9 @@ Create a local-first bridge from Android Sharesheet to an Even Hub G2 Shared Inb
 8. As a user, I can clear all items.
 9. As a user, I can use the MVP without a cloud account or external backend.
 
+On G2, item navigation uses a visible native inbox list. Opening an item enters
+the paginated reader; returning from the reader restores the inbox menu.
+
 ## Functional requirements
 
 ### Android share receiver

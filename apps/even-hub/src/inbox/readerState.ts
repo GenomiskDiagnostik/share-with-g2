@@ -16,6 +16,7 @@ export type ReaderAction =
   | { type: 'load'; items: SharedItem[] }
   | { type: 'refresh'; items: SharedItem[] }
   | { type: 'fail'; reason: ReaderFailureReason }
+  | { type: 'select-item'; index: number }
   | { type: 'next-item' }
   | { type: 'previous-item' }
   | { type: 'next-page' }
@@ -29,6 +30,7 @@ export type ReaderNavigationAction = Exclude<
   | { type: 'load' }
   | { type: 'refresh' }
   | { type: 'fail' }
+  | { type: 'select-item' }
   | { type: 'delete-current' }
   | { type: 'clear' }
   | { type: 'update-current-read' }
@@ -67,6 +69,18 @@ export function reduceReader(
   if (state.status !== 'ready') return state
 
   if (action.type === 'clear') return { status: 'empty' }
+
+  if (action.type === 'select-item') {
+    if (
+      !Number.isInteger(action.index) ||
+      action.index < 0 ||
+      action.index >= state.items.length
+    ) {
+      return state
+    }
+    if (action.index === state.selectedIndex && state.pageIndex === 0) return state
+    return { ...state, selectedIndex: action.index, pageIndex: 0 }
+  }
 
   if (action.type === 'update-current-read') {
     return {
@@ -107,12 +121,14 @@ export function reduceReader(
 
   const pageCount = getCurrentPages(state).length
   if (action.type === 'next-page') {
+    if (state.pageIndex >= pageCount - 1) return state
     return {
       ...state,
       pageIndex: Math.min(state.pageIndex + 1, pageCount - 1),
     }
   }
 
+  if (state.pageIndex === 0) return state
   return {
     ...state,
     pageIndex: Math.max(state.pageIndex - 1, 0),

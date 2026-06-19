@@ -3,7 +3,10 @@ import {
   ImageContainerProperty,
   ImageRawDataUpdate,
   ImageRawDataUpdateResult,
+  ListContainerProperty,
+  ListItemContainerProperty,
   OsEventTypeList,
+  RebuildPageContainer,
   TextContainerProperty,
   TextContainerUpgrade,
   waitForEvenAppBridge,
@@ -17,12 +20,21 @@ import {
 import { clearAccessKey, loadAccessKey, saveAccessKey } from './auth/accessKey'
 import {
   getCurrentItem,
+  getCurrentPages,
   reduceReader,
   type ReaderAction,
   type ReaderNavigationAction,
   type ReaderFailureReason,
   type ReaderState,
 } from './inbox/readerState'
+import {
+  buildInboxMenu,
+  findInboxMenuEntry,
+  getInboxMenuPageIndex,
+  type InboxMenuEntry,
+  type InboxMenuPage,
+} from './inbox/inboxMenu'
+import { ReaderScrollGate } from './inbox/readerScrollGate'
 import { DEMO_ITEMS, renderReader, type ReaderView } from './inbox/renderReader'
 import { renderSnapshot, type SnapshotState, type SnapshotView } from './snapshot/renderSnapshot'
 import { getStrings, resolveLocale } from './strings'
@@ -30,12 +42,17 @@ import './style.css'
 
 const CONTAINER_ID = 1
 const CONTAINER_NAME = 'sharedInbox'
+const MENU_HEADER_CONTAINER_ID = 10
+const MENU_HEADER_CONTAINER_NAME = 'inboxHeader'
+const MENU_LIST_CONTAINER_ID = 11
+const MENU_LIST_CONTAINER_NAME = 'inboxMenu'
 const SNAPSHOT_TEXT_CONTAINER_ID = 2
 const SNAPSHOT_TEXT_CONTAINER_NAME = 'snapshotText'
 const SNAPSHOT_IMAGE_CONTAINER_ID = 3
 const SNAPSHOT_IMAGE_CONTAINER_NAME = 'snapshotImage'
 const REFRESH_INTERVAL_MS = 10_000
 type MutationAction = 'delete-current' | 'clear'
+type GlassesMode = 'menu' | 'reader'
 
 async function main() {
   const root = document.querySelector<HTMLElement>('#app')
@@ -58,11 +75,31 @@ async function main() {
   let state: ReaderState = { status: 'loading' }
   let bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>> | undefined
   let client: LocalApiClient | undefined
+  let glassesMode: GlassesMode = 'menu'
+  let glassesSurface: 'text' | 'menu' = 'text'
+  let glassesRenderKey = ''
+  let menuPageIndex = 0
+  const scrollGate = new ReaderScrollGate()
 
   const render = async () => {
     const view = renderReader(state, locale)
-    renderWeb(root, view, strings, demoMode ? strings.demoMode : undefined)
-    if (bridge) {
+    renderWeb(root, state, view, strings, demoMode ? strings.demoMode : undefined)
+    if (!bridge) return
+
+    if (state.status === 'ready' && glassesMode === 'menu') {
+      const menu = createInboxMenu(state, menuPageIndex, strings)
+      menuPageIndex = menu.pageIndex
+      const key = `menu:${menu.entries.map(entry => entry.label).join('|')}`
+      if (key === glassesRenderKey) return
+      await bridge.rebuildPageContainer(createInboxMenuContainer(menu, strings))
+      glassesSurface = 'menu'
+      glassesRenderKey = key
+      return
+    }
+
+    const key = `text:${view.glassText}`
+    if (key === glassesRenderKey) return
+    if (glassesSurface === 'text') {
       await bridge.textContainerUpgrade(
         new TextContainerUpgrade({
           containerID: CONTAINER_ID,
@@ -72,11 +109,37 @@ async function main() {
           content: view.glassText,
         }),
       )
+    } else {
+      await bridge.rebuildPageContainer(createReaderContainer(view.glassText))
     }
+    glassesSurface = 'text'
+    glassesRenderKey = key
   }
 
   const dispatch = async (action: ReaderAction) => {
     state = reduceReader(state, action)
+    await render()
+  }
+
+  const selectItem = async (index: number) => {
+    glassesMode = 'reader'
+    await dispatch({ type: 'select-item', index })
+  }
+
+  const showMenu = async () => {
+    if (state.status === 'ready') {
+      menuPageIndex = getInboxMenuPageIndex(state.selectedIndex)
+    }
+    glassesMode = 'menu'
+    await render()
+  }
+
+  const handleMenuEntry = async (entry: InboxMenuEntry) => {
+    if (entry.kind === 'item') {
+      await selectItem(entry.itemIndex)
+      return
+    }
+    menuPageIndex += entry.kind === 'next-page' ? 1 : -1
     await render()
   }
 
@@ -151,9 +214,11 @@ async function main() {
     mutate,
     () => refreshItems(true),
     updateCurrentRead,
+    selectItem,
   )
   renderWeb(
     root,
+    state,
     renderReader(state, locale),
     strings,
     demoMode ? strings.demoMode : undefined,
@@ -182,7 +247,18 @@ async function main() {
         ],
       }),
     )
-    bindBridgeActions(bridge, dispatch)
+    glassesSurface = 'text'
+    glassesRenderKey = `text:${initialView.glassText}`
+    bindBridgeActions(
+      bridge,
+      () => state,
+      () => glassesMode,
+      () => createInboxMenu(state, menuPageIndex, strings),
+      handleMenuEntry,
+      showMenu,
+      dispatch,
+      scrollGate,
+    )
   } catch {
     root.dataset.bridge = 'unavailable'
   }
@@ -309,11 +385,7 @@ async function runScreenSnapshotMode(
       }),
     )
     bridgeReady = true
-    bindBridgeActions(bridge, async action => {
-      if (action.type === 'next-item') {
-        await loadSnapshot(true)
-      }
-    })
+    bindSnapshotBridgeActions(bridge, () => loadSnapshot(true))
   } catch {
     root.dataset.bridge = 'unavailable'
   }
@@ -360,24 +432,10 @@ function renderSnapshotWeb(
       <p class="summary">${view.body}</p>
       <div class="snapshot-preview" id="snapshot-preview"></div>
       <p class="reader-help">${view.help}</p>
-      <form class="pairing-form" data-pairing-form hidden>
-        <label for="access-key">${strings.pairingLabel}</label>
-        <input
-          id="access-key"
-          name="access-key"
-          type="text"
-          inputmode="text"
-          autocomplete="off"
-          autocapitalize="none"
-          spellcheck="false"
-          required
-        >
-        <p>${strings.pairingHelp}</p>
-        <button type="submit">${strings.pairingSave}</button>
-      </form>
       <div class="reader-actions">
         <button type="button" data-refresh-snapshot>${strings.snapshotRefresh}</button>
         <button type="button" data-open-inbox>${strings.snapshotOpenInbox}</button>
+        <button type="button" data-open-settings data-pairing-settings hidden>${strings.openSettings}</button>
         <button type="button" data-reload hidden>${strings.retry}</button>
       </div>
     </section>
@@ -391,8 +449,8 @@ function renderSnapshotWeb(
     preview.append(image)
   }
 
-  const pairingForm = root.querySelector<HTMLFormElement>('[data-pairing-form]')
-  if (pairingForm) pairingForm.hidden = !shouldShowPairingForm(view.needsPairing)
+  const pairingSettings = root.querySelector<HTMLButtonElement>('[data-pairing-settings]')
+  if (pairingSettings) pairingSettings.hidden = !view.needsPairing
   const retryButton = root.querySelector<HTMLButtonElement>('[data-reload]')
   if (retryButton) {
     retryButton.hidden = view.status !== 'error' || view.needsPairing
@@ -411,23 +469,6 @@ function bindSnapshotWebActions(
   refreshSnapshot: () => Promise<void>,
   demoMode: boolean,
 ) {
-  root.addEventListener('submit', event => {
-    const form = (event.target as HTMLElement).closest<HTMLFormElement>(
-      '[data-pairing-form]',
-    )
-    if (!form) return
-    event.preventDefault()
-    const input = form.elements.namedItem('access-key')
-    if (!(input instanceof HTMLInputElement)) return
-    input.setCustomValidity('')
-    if (!saveAccessKey(input.value)) {
-      input.setCustomValidity(strings.pairingInvalid)
-      input.reportValidity()
-      return
-    }
-    window.location.reload()
-  })
-
   root.addEventListener('click', event => {
     const refresh = (event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-refresh-snapshot]',
@@ -491,8 +532,91 @@ const DEMO_SNAPSHOT: ScreenSnapshot = {
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
 }
 
+function createInboxMenu(
+  state: ReaderState,
+  pageIndex: number,
+  strings: ReturnType<typeof getStrings>,
+): InboxMenuPage {
+  return buildInboxMenu(
+    state.status === 'ready' ? state.items : [],
+    pageIndex,
+    {
+      untitled: strings.untitled,
+      unread: strings.readStateUnread,
+      read: strings.readStateRead,
+      previous: strings.menuPrevious,
+      next: strings.menuNext,
+    },
+  )
+}
+
+function createInboxMenuContainer(
+  menu: InboxMenuPage,
+  strings: ReturnType<typeof getStrings>,
+): RebuildPageContainer {
+  const title = `${strings.readerTitle} ${menu.pageIndex + 1}/${menu.pageCount}`
+  return new RebuildPageContainer({
+    containerTotalNum: 2,
+    textObject: [
+      new TextContainerProperty({
+        xPosition: 0,
+        yPosition: 0,
+        width: 576,
+        height: 48,
+        borderWidth: 0,
+        paddingLength: 6,
+        containerID: MENU_HEADER_CONTAINER_ID,
+        containerName: MENU_HEADER_CONTAINER_NAME,
+        content: `${title}\n${strings.menuHelp}`,
+        isEventCapture: 0,
+      }),
+    ],
+    listObject: [
+      new ListContainerProperty({
+        xPosition: 0,
+        yPosition: 50,
+        width: 576,
+        height: 238,
+        borderWidth: 0,
+        paddingLength: 6,
+        containerID: MENU_LIST_CONTAINER_ID,
+        containerName: MENU_LIST_CONTAINER_NAME,
+        itemContainer: new ListItemContainerProperty({
+          itemCount: menu.entries.length,
+          itemWidth: 0,
+          isItemSelectBorderEn: 1,
+          itemName: menu.entries.map(entry => entry.label),
+        }),
+        isEventCapture: 1,
+      }),
+    ],
+  })
+}
+
+function createReaderContainer(content: string): RebuildPageContainer {
+  return new RebuildPageContainer({
+    containerTotalNum: 1,
+    textObject: [
+      new TextContainerProperty({
+        xPosition: 0,
+        yPosition: 0,
+        width: 576,
+        height: 288,
+        borderWidth: 0,
+        borderColor: 5,
+        paddingLength: 8,
+        containerID: CONTAINER_ID,
+        containerName: CONTAINER_NAME,
+        content,
+        isEventCapture: 1,
+      }),
+    ],
+  })
+}
+
 function renderWeb(
   root: HTMLElement,
+  state: ReaderState,
   view: ReaderView,
   strings: ReturnType<typeof getStrings>,
   badge?: string,
@@ -506,32 +630,20 @@ function renderWeb(
           <button type="button" class="settings-button" data-open-settings aria-label="${strings.openSettings}" title="${strings.openSettings}">⚙</button>
         </div>
       </div>
+      <section class="item-picker" id="item-picker" hidden>
+        <h2 id="item-picker-title"></h2>
+        <div class="item-picker-list" id="item-picker-list"></div>
+      </section>
       <p class="reader-meta" id="reader-meta"></p>
       <h1 id="reader-heading"></h1>
       <div class="reader-body" id="reader-body"></div>
       <p class="reader-help" id="reader-help"></p>
       <p class="mutation-status" id="mutation-status" role="status"></p>
-      <form class="pairing-form" data-pairing-form hidden>
-        <label for="access-key" id="pairing-label"></label>
-        <input
-          id="access-key"
-          name="access-key"
-          type="text"
-          inputmode="text"
-          autocomplete="off"
-          autocapitalize="none"
-          spellcheck="false"
-          required
-        >
-        <p id="pairing-help"></p>
-        <button type="submit" id="pairing-save"></button>
-      </form>
       <div class="reader-actions">
-        <button type="button" data-action="previous-item" id="previous-item"></button>
         <button type="button" data-action="previous-page" id="previous-page"></button>
         <button type="button" data-action="next-page" id="next-page"></button>
-        <button type="button" data-action="next-item" id="next-item"></button>
         <button type="button" data-refresh id="refresh-items"></button>
+        <button type="button" data-open-settings id="pairing-settings" hidden></button>
         <button type="button" data-reload id="retry" hidden></button>
       </div>
       <div class="mutation-actions" id="mutation-actions" hidden>
@@ -557,15 +669,11 @@ function renderWeb(
   setText(root, '#reader-heading', view.heading)
   setText(root, '#reader-body', view.body)
   setText(root, '#reader-help', view.help)
-  setText(root, '#previous-item', strings.previousItem)
   setText(root, '#previous-page', strings.previousPage)
   setText(root, '#next-page', strings.nextPage)
-  setText(root, '#next-item', strings.nextItem)
   setText(root, '#refresh-items', strings.refresh)
   setText(root, '#retry', strings.retry)
-  setText(root, '#pairing-label', strings.pairingLabel)
-  setText(root, '#pairing-help', strings.pairingHelp)
-  setText(root, '#pairing-save', strings.pairingSave)
+  setText(root, '#pairing-settings', strings.openSettings)
   setText(root, '#delete-current', strings.deleteCurrent)
   setText(root, '#clear-all', strings.clearAll)
   setText(
@@ -575,8 +683,9 @@ function renderWeb(
   )
   setText(root, '#confirmation-cancel', strings.mutationCancel)
 
-  const pairingForm = root.querySelector<HTMLFormElement>('[data-pairing-form]')
-  if (pairingForm) pairingForm.hidden = !shouldShowPairingForm(view.needsPairing)
+  renderItemPicker(root, state, strings)
+  const pairingSettings = root.querySelector<HTMLButtonElement>('#pairing-settings')
+  if (pairingSettings) pairingSettings.hidden = !view.needsPairing
   const mutationActions = root.querySelector<HTMLElement>('#mutation-actions')
   if (mutationActions) mutationActions.hidden = view.status !== 'ready'
 
@@ -588,15 +697,38 @@ function renderWeb(
 
   for (const button of root.querySelectorAll<HTMLButtonElement>('[data-action]')) {
     const action = button.dataset.action
-    button.disabled = action?.includes('item')
-      ? !view.canNavigateItems
-      : !view.canNavigatePages
+    button.disabled = !view.canNavigatePages
   }
 
   const retryButton = root.querySelector<HTMLButtonElement>('#retry')
   if (retryButton) {
     retryButton.hidden = view.status !== 'error' || view.needsPairing
   }
+}
+
+function renderItemPicker(
+  root: HTMLElement,
+  state: ReaderState,
+  strings: ReturnType<typeof getStrings>,
+) {
+  const picker = root.querySelector<HTMLElement>('#item-picker')
+  const list = root.querySelector<HTMLElement>('#item-picker-list')
+  if (!picker || !list) return
+  picker.hidden = state.status !== 'ready'
+  if (state.status !== 'ready') return
+
+  setText(root, '#item-picker-title', strings.itemPickerTitle)
+  state.items.forEach((item, index) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'item-picker-button'
+    button.dataset.selectItemIndex = String(index)
+    button.setAttribute('aria-current', index === state.selectedIndex ? 'true' : 'false')
+    const title = item.title?.trim() || strings.untitled
+    const readState = item.read ? strings.readStateRead : strings.readStateUnread
+    button.textContent = `${index + 1}. ${title} - ${readState}`
+    list.append(button)
+  })
 }
 
 function bindWebActions(
@@ -607,25 +739,17 @@ function bindWebActions(
   mutate: (action: MutationAction) => Promise<ReaderFailureReason | undefined>,
   refreshItems: () => Promise<void>,
   updateCurrentRead: () => Promise<void>,
+  selectItem: (index: number) => Promise<void>,
 ) {
-  root.addEventListener('submit', event => {
-    const form = (event.target as HTMLElement).closest<HTMLFormElement>(
-      '[data-pairing-form]',
+  root.addEventListener('click', event => {
+    const selectedItem = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-select-item-index]',
     )
-    if (!form) return
-    event.preventDefault()
-    const input = form.elements.namedItem('access-key')
-    if (!(input instanceof HTMLInputElement)) return
-    input.setCustomValidity('')
-    if (!saveAccessKey(input.value)) {
-      input.setCustomValidity(strings.pairingInvalid)
-      input.reportValidity()
+    if (selectedItem) {
+      const index = Number(selectedItem.dataset.selectItemIndex)
+      if (Number.isInteger(index)) void selectItem(index)
       return
     }
-    window.location.reload()
-  })
-
-  root.addEventListener('click', event => {
     const readToggle = (event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-read-toggle]',
     )
@@ -837,10 +961,6 @@ function runSettingsMode(
   })
 }
 
-function shouldShowPairingForm(needsPairing: boolean): boolean {
-  return needsPairing || !loadAccessKey()
-}
-
 function openSettingsPage() {
   const url = new URL(window.location.href)
   url.searchParams.set('settings', '1')
@@ -872,19 +992,70 @@ function isNavigationAction(
 
 function bindBridgeActions(
   bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>>,
+  getState: () => ReaderState,
+  getMode: () => GlassesMode,
+  getMenu: () => InboxMenuPage,
+  handleMenuEntry: (entry: InboxMenuEntry) => Promise<void>,
+  showMenu: () => Promise<void>,
   dispatch: (action: ReaderAction) => Promise<void>,
+  scrollGate: ReaderScrollGate,
+) {
+  const unsubscribe = bridge.onEvenHubEvent(event => {
+    const sysType = event.sysEvent?.eventType ?? null
+    if (
+      sysType === OsEventTypeList.SYSTEM_EXIT_EVENT ||
+      sysType === OsEventTypeList.ABNORMAL_EXIT_EVENT
+    ) {
+      unsubscribe()
+      return
+    }
+
+    if (getMode() === 'menu') {
+      const listType = event.listEvent?.eventType ?? sysType
+      if (listType === OsEventTypeList.CLICK_EVENT && event.listEvent) {
+        const entry = findInboxMenuEntry(
+          getMenu(),
+          event.listEvent.currentSelectItemName,
+        )
+        if (entry) void handleMenuEntry(entry)
+      } else if (listType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
+        void bridge.shutDownPageContainer(1)
+      }
+      return
+    }
+
+    const textType = event.textEvent?.eventType ?? null
+    const eventType = textType ?? sysType
+    if (eventType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
+      void showMenu()
+      return
+    }
+    if (
+      eventType !== OsEventTypeList.SCROLL_TOP_EVENT &&
+      eventType !== OsEventTypeList.SCROLL_BOTTOM_EVENT
+    ) return
+
+    const state = getState()
+    if (state.status !== 'ready') return
+    const action = scrollGate.actionFor(
+      eventType === OsEventTypeList.SCROLL_TOP_EVENT ? 'top' : 'bottom',
+      state.pageIndex,
+      getCurrentPages(state).length,
+    )
+    if (action) void dispatch({ type: action })
+  })
+}
+
+function bindSnapshotBridgeActions(
+  bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>>,
+  refresh: () => Promise<void>,
 ) {
   const unsubscribe = bridge.onEvenHubEvent(event => {
     const sysType = event.sysEvent?.eventType ?? null
     const textType = event.textEvent?.eventType ?? null
     const eventType = textType ?? sysType
-
     if (eventType === OsEventTypeList.CLICK_EVENT) {
-      void dispatch({ type: 'next-item' })
-    } else if (eventType === OsEventTypeList.SCROLL_TOP_EVENT) {
-      void dispatch({ type: 'previous-page' })
-    } else if (eventType === OsEventTypeList.SCROLL_BOTTOM_EVENT) {
-      void dispatch({ type: 'next-page' })
+      void refresh()
     } else if (eventType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
       void bridge.shutDownPageContainer(1)
     } else if (
