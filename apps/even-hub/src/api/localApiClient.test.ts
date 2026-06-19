@@ -5,6 +5,28 @@ import {
 } from './localApiClient'
 
 describe('LocalApiClient', () => {
+  it('falls back from localhost to the numeric loopback address', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).startsWith('http://localhost')) {
+        throw new TypeError('blocked by runtime')
+      }
+      return jsonResponse({ ok: true, version: '0.1.1' })
+    })
+    const client = new LocalApiClient(undefined, fetcher)
+
+    await expect(client.health()).resolves.toEqual({ ok: true, version: '0.1.1' })
+    expect(fetcher).toHaveBeenNthCalledWith(
+      1,
+      'http://localhost:8765/health',
+      expect.anything(),
+    )
+    expect(fetcher).toHaveBeenNthCalledWith(
+      2,
+      'http://127.0.0.1:8765/health',
+      expect.anything(),
+    )
+  })
+
   it('loads and validates health', async () => {
     const fetcher = vi.fn(async () => jsonResponse({ ok: true, version: '0.1.0' }))
     const client = new LocalApiClient('http://127.0.0.1:8765', fetcher)

@@ -137,7 +137,9 @@ Reader input mapping:
 
 ## Local API design
 
-Base URL for MVP: `http://127.0.0.1:8765`.
+Primary Even Hub URL for version 0.1.1: `http://localhost:8765`. The client
+falls back to `http://127.0.0.1:8765` only for network errors or timeouts. The
+Android server remains bound to numeric loopback.
 
 See `docs/api/local-api.md` for endpoint details.
 

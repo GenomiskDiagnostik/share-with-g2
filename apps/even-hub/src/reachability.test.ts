@@ -25,6 +25,6 @@ describe('probeLocalApi', () => {
 
     const result = await probeLocalApi(client)
     expect(result).toEqual({ state: 'failed', reason: 'network' })
-    expect(describeResult(result, 'da').summary).toContain('127.0.0.1:8765')
+    expect(describeResult(result, 'da').summary).toContain('localhost')
   })
 })

@@ -31,6 +31,8 @@ Create a local-first bridge from Android Sharesheet to an Even Hub G2 Shared Inb
 ### Android share receiver
 
 - Register an exported `Activity` for Android Sharesheet.
+- Register the same activity for `ACTION_PROCESS_TEXT` so selected plain text
+  can be sent from compatible Android apps.
 - Accept:
   - `ACTION_SEND` with `text/plain`
   - `ACTION_SEND` with `text/html`

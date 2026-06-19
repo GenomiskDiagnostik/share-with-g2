@@ -63,7 +63,7 @@ Response:
 ```json
 {
   "ok": true,
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
 ```
 
@@ -198,5 +198,8 @@ Deferred until needed:
 ## Cross-origin and private-network access (M2 feasibility)
 
 - The local API returns `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Headers` (including `Authorization`, `Content-Type`, and `X-Send-To-G2-Client`) on every response, including `OPTIONS` preflight.
-- It also returns `Access-Control-Allow-Private-Network: true`. The Even Hub plugin runs in a secure WebView and fetches `http://127.0.0.1:8765`, which Chrome Private Network Access treats as a private-network target; without this header the preflight is blocked and the plugin reports a network error.
+- It also returns `Access-Control-Allow-Private-Network: true`. The Even Hub
+  plugin tries `http://localhost:8765` and then `http://127.0.0.1:8765`, which
+  Chrome Private Network Access treats as loopback targets; without this header
+  the preflight is blocked and the plugin reports a network error.
 - Debug builds set `trustLoopback = BuildConfig.DEBUG`, which skips the Bearer-key check for protected routes. This is a temporary feasibility measure because the Even app surfaces the glasses text container, not the app HTML form, so the pairing form is unreachable on the glasses. Release builds keep the Bearer requirement. Supersede this with a glasses-friendly pairing flow (e.g. a short code entered via glasses input) before release; see ADR-007/ADR-008.

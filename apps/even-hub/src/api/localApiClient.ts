@@ -1,4 +1,5 @@
-export const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8765'
+export const DEFAULT_API_BASE_URL = 'http://localhost:8765'
+export const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8765'
 
 export type HealthResponse = {
   ok: true
@@ -30,11 +31,15 @@ type Fetcher = (
 ) => Promise<Response>
 
 export class LocalApiClient {
+  private activeBaseUrl: string | undefined
+
   constructor(
     private readonly baseUrl = DEFAULT_API_BASE_URL,
     private readonly fetcher: Fetcher = fetch,
     private readonly timeoutMs = 3_000,
     private readonly accessKey?: string,
+    private readonly fallbackBaseUrls: readonly string[] =
+      baseUrl === DEFAULT_API_BASE_URL ? [FALLBACK_API_BASE_URL] : [],
   ) {}
 
   async health(): Promise<HealthResponse> {
@@ -76,6 +81,38 @@ export class LocalApiClient {
     authenticated: boolean,
     body?: unknown,
   ): Promise<unknown> {
+    const candidates = Array.from(new Set([
+      ...(this.activeBaseUrl ? [this.activeBaseUrl] : []),
+      this.baseUrl,
+      ...this.fallbackBaseUrls,
+    ]))
+    let lastError: unknown
+    for (const [index, candidate] of candidates.entries()) {
+      try {
+        const value = await this.requestFrom(
+          candidate,
+          method,
+          path,
+          authenticated,
+          body,
+        )
+        this.activeBaseUrl = candidate
+        return value
+      } catch (error) {
+        lastError = error
+        if (!isNetworkFailure(error) || index === candidates.length - 1) throw error
+      }
+    }
+    throw lastError
+  }
+
+  private async requestFrom(
+    baseUrl: string,
+    method: 'GET' | 'PATCH' | 'DELETE',
+    path: string,
+    authenticated: boolean,
+    body?: unknown,
+  ): Promise<unknown> {
     const controller = new AbortController()
     const timeout = globalThis.setTimeout(() => controller.abort(), this.timeoutMs)
     try {
@@ -89,7 +126,7 @@ export class LocalApiClient {
       if (body !== undefined) {
         headers['Content-Type'] = 'application/json'
       }
-      const response = await this.fetcher(`${this.baseUrl}${path}`, {
+      const response = await this.fetcher(`${baseUrl}${path}`, {
         method,
         headers,
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -102,6 +139,11 @@ export class LocalApiClient {
       globalThis.clearTimeout(timeout)
     }
   }
+}
+
+function isNetworkFailure(error: unknown): boolean {
+  return error instanceof TypeError ||
+    (error instanceof DOMException && error.name === 'AbortError')
 }
 
 export class ApiStatusError extends Error {

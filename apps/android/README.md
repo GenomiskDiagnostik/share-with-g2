@@ -41,6 +41,7 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 ## Implemented slice
 
 - Sharesheet receiver for `text/plain`, `text/html`, and `text/*`.
+- Selected-text receiver for Android `ACTION_PROCESS_TEXT` with `text/plain`.
 - HTML converted to plain text.
 - 64 KiB maximum stored text length.
 - URL classification for complete HTTP/HTTPS URLs.

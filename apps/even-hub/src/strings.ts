@@ -100,7 +100,7 @@ const strings: Record<SupportedLocale, AppStrings> = {
     failureTimeout: 'Forbindelsen fik ikke svar inden for tidsgrænsen.',
     failureHttp: detail => `API'en svarede med HTTP ${detail ?? 'fejl'}.`,
     failureInvalidResponse: 'API-svaret havde et ukendt format.',
-    failureNetwork: 'WebView’en kunne ikke nå 127.0.0.1:8765.',
+    failureNetwork: 'WebView’en kunne ikke nå localhost eller 127.0.0.1 på port 8765.',
     failedGlass: explanation =>
       `Send to G2\n\nIngen lokal forbindelse\n${explanation}\n\nÅbn Android-appen og prøv igen.`,
     readerTitle: 'Delt indbakke',
@@ -182,7 +182,7 @@ const strings: Record<SupportedLocale, AppStrings> = {
     failureTimeout: 'The connection did not respond before the timeout.',
     failureHttp: detail => `The API returned HTTP ${detail ?? 'error'}.`,
     failureInvalidResponse: 'The API returned an unknown response format.',
-    failureNetwork: 'The WebView could not reach 127.0.0.1:8765.',
+    failureNetwork: 'The WebView could not reach localhost or 127.0.0.1 on port 8765.',
     failedGlass: explanation =>
       `Send to G2\n\nNo local connection\n${explanation}\n\nOpen the Android app and try again.`,
     readerTitle: 'Shared inbox',

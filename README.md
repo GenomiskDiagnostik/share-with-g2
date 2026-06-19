@@ -4,7 +4,7 @@ Local-first Android companion app and Even Hub G2 webapp for sending shared text
 
 ## Product summary
 
-Send to G2 appears as an Android Sharesheet target. When a user shares text, a URL, or simple HTML-derived text from Chrome, Reddit, email, PDF viewers, or other apps, the Android app stores the item locally, emits a normal Android notification, and exposes a local inbox API. The Even Hub app reads that local inbox and presents a glasses-friendly Shared Inbox with pagination, navigation, live refresh, read/unread state, single-item deletion, and clear-all. A separate snapshot mode can show one user-approved Android screen snapshot on G2.
+Send to G2 appears as an Android Sharesheet and selected-text action. When a user shares or selects text, a URL, or simple HTML-derived text from Chrome, Reddit, email, PDF viewers, or other apps, the Android app stores the item locally, emits a normal Android notification, and exposes a local inbox API. The Even Hub app reads that local inbox and presents a glasses-friendly Shared Inbox with pagination, navigation, live refresh, read/unread state, single-item deletion, and clear-all. A separate snapshot mode can show one user-approved Android screen snapshot on G2.
 
 The MVP deliberately avoids direct BLE reverse engineering. Notifications should flow through the existing Even notification mirroring pipeline where available. The G2 app is a reader/inbox, not a low-level hardware integration layer.
 
@@ -12,13 +12,16 @@ The MVP deliberately avoids direct BLE reverse engineering. Notifications should
 
 - Android companion app: Kotlin, Jetpack Compose, Room, DataStore, WorkManager only if needed.
 - Even Hub app: TypeScript, Vite, `@evenrealities/even_hub_sdk`.
-- Data bridge: local HTTP API on `127.0.0.1:8765` first; fallback transport is explicitly deferred until verified.
+- Data bridge: local HTTP API through `localhost:8765`, with numeric loopback
+  fallback; an HTTPS relay remains deferred until the final physical alias
+  probe is complete.
 
 ## MVP scope
 
 Version 0.1 supports:
 
 - Android share target labelled `Send to G2`.
+- Android selected-text action labelled `Send to G2`.
 - `text/plain`, `text/html`, and `text/*` inbound shares.
 - URL detection from shared text.
 - Local storage of shared items.

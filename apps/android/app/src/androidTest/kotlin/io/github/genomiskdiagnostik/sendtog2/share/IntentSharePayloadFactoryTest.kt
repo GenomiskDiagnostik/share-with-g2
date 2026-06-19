@@ -39,6 +39,21 @@ class IntentSharePayloadFactoryTest {
     }
 
     @Test
+    fun extractsSelectedProcessText() {
+        val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_PROCESS_TEXT, "Markeret tekst")
+        }
+
+        val payload = IntentSharePayloadFactory.from(intent, "com.example.editor")
+
+        assertEquals("text/plain", payload?.mimeType)
+        assertEquals("Markeret tekst", payload?.text)
+        assertEquals(null, payload?.subject)
+        assertEquals("com.example.editor", payload?.sourceApp)
+    }
+
+    @Test
     fun rejectsNonSendActions() {
         val intent = Intent(Intent.ACTION_VIEW)
 

@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Deliver and validate the authenticated Even Hub Shared Inbox reader while
-physical loopback reachability remains an explicit gate.
+Deliver and validate version 0.1.1 with the final authenticated loopback-alias
+probe and Android selected-text sharing.
 
 ## Current phase
 
@@ -12,8 +12,8 @@ Phase 3: Even Hub Shared Inbox reader slice.
 ## Active assumptions
 
 - The Android app is the persistence owner.
-- The Even Hub app can attempt to call a local phone endpoint at
-  `http://127.0.0.1:8765`; feasibility must be validated early.
+- The Even Hub app first calls `http://localhost:8765` and retries
+  `http://127.0.0.1:8765` only for browser-level network failures.
 - The MVP handles text and links only.
 - Screen snapshot mode is a separate v0.2 feasibility slice; it captures one
   user-approved image and does not add image/file Sharesheet ingestion.
@@ -50,6 +50,7 @@ Deliverables:
 - Android project scaffold. Complete.
 - `ShareReceiverActivity` registered in the manifest. Complete.
 - `text/plain`, `text/html`, and `text/*` receive flow. Complete.
+- Android selected-text `ACTION_PROCESS_TEXT` receive flow. Complete locally.
 - Pure parser with validation and URL classification. Complete.
 - Room entity, DAO, database, and repository. Complete.
 - Permission-aware notification preview. Complete.
@@ -135,6 +136,14 @@ Exit criteria:
 - G2 WebView/local app reachability is verified or disproven.
 - A fallback ADR is created only if loopback is not viable.
 
+Physical evidence for version 0.1.0:
+
+- Android self-test passed and the foreground service remained active.
+- Android diagnostics recorded no Even Hub `OPTIONS` or `GET` request.
+- Numeric loopback was therefore blocked before Android routing, CORS, or auth.
+- ADR-012 defines the final `localhost` plus numeric-loopback alias probe before
+  an HTTPS relay is considered.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -200,6 +209,7 @@ Exit criteria:
 ## Accepted implementation decisions
 
 - Android application ID: `io.github.genomiskdiagnostik.sendtog2`.
+- Android version: `0.1.1` (`versionCode` 2).
 - Android min SDK 26; compile and target SDK 36.
 - JDK 17, Gradle 8.13, AGP 8.13.2, and Kotlin 2.3.21.
 - HTML shares flatten to sanitized plain text.
@@ -209,6 +219,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
+- Even Hub package version: `0.1.1`.
 - The local API is owned by a visible `dataSync` foreground service started
   from user-visible app and Sharesheet flows, as documented in ADR-011.
 - The in-process server remains restartable, and the foreground notification
@@ -241,7 +252,7 @@ Exit criteria:
 
 ## Open decisions
 
-- Whether Even Hub WebView can reach Android loopback.
+- Whether Even Hub WebView can reach the `localhost` alias in version 0.1.1.
 - Whether v0.2 should add undo after confirmed deletion.
 - Whether read/unread should gain filters or automatic "mark read when opened"
   behavior.
@@ -251,8 +262,7 @@ Exit criteria:
 
 ## Immediate next task
 
-Install the verified artifacts from Android run `27819712631` and Even Hub run
-`27819933849`, pair Even Hub with the Android key, and execute the physical-phone
-reachability, reader mutation, read-state refresh, screen snapshot, and
-link-content scripts. Use Android diagnostics to record the packaged WebView
-origin and foreground-service lifetime before release acceptance.
+Build version 0.1.1 artifacts, install both packages, and run the physical
+`localhost` alias probe. Also validate selected text -> `Send to G2` from at
+least two compatible Android apps. If Android still records no Even Hub request,
+supersede the local transport ADR with an explicit HTTPS relay design.

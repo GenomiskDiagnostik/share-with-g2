@@ -22,7 +22,10 @@ This directory contains the Even Hub G2 app.
 
 - Official Vite and Even Hub SDK structure.
 - Package ID: `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Network permission limited to `http://127.0.0.1:8765`.
+- Network permission limited to `http://localhost:8765` and
+  `http://127.0.0.1:8765`.
+- Local client probes the hostname alias first and retries the numeric loopback
+  address only after a browser-level network error or timeout.
 - Runtime-validated `GET /health` and `GET /items` client.
 - Local pairing form shown when the Android API returns `401`.
 - Access key persistence in WebView local storage and Bearer authorization for
