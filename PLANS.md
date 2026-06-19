@@ -93,7 +93,7 @@ Deliverables:
 - GitHub Actions `.ehpk` artifact. Complete.
 - Restartable in-process API lifecycle. Complete locally.
 - Foreground local-API lifecycle with explicit notification stop action.
-  Complete locally; GitHub emulator validation pending.
+  Complete locally and in the GitHub emulator.
 - Privacy-safe request diagnostics and Android self-test. Complete locally.
 - Explicit Even Hub client marker for origin/user-agent capture. Complete locally.
 - Per-installation access key and Android pairing controls. Complete locally.
@@ -111,17 +111,18 @@ Automated status:
 - 54 Android unit tests cover parser, persistence, link extraction, API
   routing, authenticated mutations, read-state updates, screen snapshot sizing
   and routing, restart, self-test, and bounded request diagnostics locally.
-- Current Even Hub workflow run for `6644d91`:
-  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27696694011`.
-- Current Android workflow run for `6644d91`:
-  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27696256867`.
+- Current Even Hub workflow run for `64bdbb6`:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27819933849`.
+- Current Android workflow run for `64bdbb6`:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27819712631`.
 - Artifacts: Even Hub package, debug APKs, Android build reports, and Android
   instrumentation reports.
-- The current GitHub artifacts were downloaded and inspected on 2026-06-19.
-  Android reports contain 54 passing JVM tests, 7 passing instrumented tests,
+- The current GitHub artifacts for `64bdbb6` were downloaded and inspected on
+  2026-06-19. Android reports contain 54 passing JVM tests, 8 passing
+  instrumented tests,
   no failures, and lint warnings only. The packaged Even Hub JavaScript contains
   the loopback URL, client marker, pairing storage, authorization, and screen
-  snapshot routes expected at `6644d91`.
+  snapshot routes expected at `64bdbb6`.
 - The Android diagnostics card can now run a loopback self-test, restart the
   server, count requests, and show the last identified Even Hub origin and
   user-agent without recording inbox content.
@@ -250,9 +251,8 @@ Exit criteria:
 
 ## Immediate next task
 
-Install the verified artifacts from Android run `27696256867` and Even Hub run
-`27696694011`, pair Even Hub with the Android key, and execute the physical-phone
+Install the verified artifacts from Android run `27819712631` and Even Hub run
+`27819933849`, pair Even Hub with the Android key, and execute the physical-phone
 reachability, reader mutation, read-state refresh, screen snapshot, and
-link-content scripts. ADB installation remains pending because no device was
-connected during artifact inspection. Use Android diagnostics to record the
-packaged WebView origin and background lifetime before release acceptance.
+link-content scripts. Use Android diagnostics to record the packaged WebView
+origin and foreground-service lifetime before release acceptance.
