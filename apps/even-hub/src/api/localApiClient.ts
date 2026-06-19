@@ -1,5 +1,7 @@
 export const DEFAULT_API_BASE_URL = 'http://localhost:8765'
 export const FALLBACK_API_BASE_URL = 'http://127.0.0.1:8765'
+export const DEFAULT_WEBSOCKET_URL = 'ws://localhost:8765/even-hub-ws'
+export const FALLBACK_WEBSOCKET_URL = 'ws://127.0.0.1:8765/even-hub-ws'
 
 export type HealthResponse = {
   ok: true
@@ -30,8 +32,17 @@ type Fetcher = (
   init?: RequestInit,
 ) => Promise<Response>
 
+export type WebSocketFactory = (url: string) => WebSocket
+
+type WebSocketResponse = {
+  id: number
+  status: number
+  body: string
+}
+
 export class LocalApiClient {
   private activeBaseUrl: string | undefined
+  private activeWebSocketUrl: string | undefined
 
   constructor(
     private readonly baseUrl = DEFAULT_API_BASE_URL,
@@ -40,6 +51,12 @@ export class LocalApiClient {
     private readonly accessKey?: string,
     private readonly fallbackBaseUrls: readonly string[] =
       baseUrl === DEFAULT_API_BASE_URL ? [FALLBACK_API_BASE_URL] : [],
+    private readonly webSocketFactory: WebSocketFactory | undefined =
+      typeof WebSocket === 'undefined' ? undefined : url => new WebSocket(url),
+    private readonly webSocketUrls: readonly string[] =
+      baseUrl === DEFAULT_API_BASE_URL
+        ? [DEFAULT_WEBSOCKET_URL, FALLBACK_WEBSOCKET_URL]
+        : [],
   ) {}
 
   async health(): Promise<HealthResponse> {
@@ -81,12 +98,35 @@ export class LocalApiClient {
     authenticated: boolean,
     body?: unknown,
   ): Promise<unknown> {
+    const webSocketCandidates = Array.from(new Set([
+      ...(this.activeWebSocketUrl ? [this.activeWebSocketUrl] : []),
+      ...this.webSocketUrls,
+    ]))
+    let lastError: unknown
+    if (this.webSocketFactory) {
+      for (const candidate of webSocketCandidates) {
+        try {
+          const value = await this.requestFromWebSocket(
+            candidate,
+            method,
+            path,
+            authenticated,
+            body,
+          )
+          this.activeWebSocketUrl = candidate
+          return value
+        } catch (error) {
+          lastError = error
+          if (!isNetworkFailure(error)) throw error
+        }
+      }
+    }
+
     const candidates = Array.from(new Set([
       ...(this.activeBaseUrl ? [this.activeBaseUrl] : []),
       this.baseUrl,
       ...this.fallbackBaseUrls,
     ]))
-    let lastError: unknown
     for (const [index, candidate] of candidates.entries()) {
       try {
         const value = await this.requestFrom(
@@ -104,6 +144,79 @@ export class LocalApiClient {
       }
     }
     throw lastError
+  }
+
+  private requestFromWebSocket(
+    url: string,
+    method: 'GET' | 'PATCH' | 'DELETE',
+    path: string,
+    authenticated: boolean,
+    body?: unknown,
+  ): Promise<unknown> {
+    const factory = this.webSocketFactory
+    if (!factory) return Promise.reject(new TypeError('WebSocket unavailable'))
+
+    return new Promise((resolve, reject) => {
+      let settled = false
+      let socket: WebSocket | undefined
+      const finish = (action: () => void) => {
+        if (settled) return
+        settled = true
+        globalThis.clearTimeout(timeout)
+        action()
+      }
+      const failNetwork = () => finish(() => reject(
+        new TypeError('Local WebSocket connection failed'),
+      ))
+      const timeout = globalThis.setTimeout(() => {
+        try {
+          socket?.close()
+        } catch {
+          // The connection may fail before a socket is fully initialized.
+        }
+        finish(() => reject(new DOMException('Timed out', 'AbortError')))
+      }, Math.min(this.timeoutMs, WEBSOCKET_TIMEOUT_MS))
+
+      try {
+        socket = factory(url)
+      } catch {
+        failNetwork()
+        return
+      }
+      socket.onopen = () => {
+        const envelope = {
+          id: 1,
+          method,
+          path,
+          ...(authenticated && this.accessKey
+            ? { accessKey: this.accessKey }
+            : {}),
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        }
+        socket.send(JSON.stringify(envelope))
+      }
+      socket.onmessage = event => {
+        try {
+          const response = parseWebSocketResponse(event.data)
+          if (response.id !== 1) throw new InvalidApiResponseError()
+          if (response.status < 200 || response.status >= 300) {
+            finish(() => reject(new ApiStatusError(response.status)))
+            socket?.close()
+            return
+          }
+          const value = response.status === 204
+            ? undefined
+            : JSON.parse(response.body) as unknown
+          finish(() => resolve(value))
+          socket?.close()
+        } catch (error) {
+          finish(() => reject(error))
+          socket?.close()
+        }
+      }
+      socket.onerror = failNetwork
+      socket.onclose = failNetwork
+    })
   }
 
   private async requestFrom(
@@ -139,6 +252,24 @@ export class LocalApiClient {
       globalThis.clearTimeout(timeout)
     }
   }
+}
+
+const WEBSOCKET_TIMEOUT_MS = 1_500
+
+function parseWebSocketResponse(value: unknown): WebSocketResponse {
+  if (typeof value !== 'string') throw new InvalidApiResponseError()
+  const parsed: unknown = JSON.parse(value)
+  if (
+    !isRecord(parsed) ||
+    typeof parsed.id !== 'number' ||
+    !Number.isSafeInteger(parsed.id) ||
+    typeof parsed.status !== 'number' ||
+    !Number.isSafeInteger(parsed.status) ||
+    typeof parsed.body !== 'string'
+  ) {
+    throw new InvalidApiResponseError()
+  }
+  return { id: parsed.id, status: parsed.status, body: parsed.body }
 }
 
 function isNetworkFailure(error: unknown): boolean {

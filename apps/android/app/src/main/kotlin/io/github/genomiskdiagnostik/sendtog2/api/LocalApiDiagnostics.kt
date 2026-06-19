@@ -31,11 +31,13 @@ class LocalApiDiagnostics(
     val state: StateFlow<LocalApiDiagnosticsState> = mutableState.asStateFlow()
 
     fun record(request: ApiRequest) {
+        val client = request.header(CLIENT_HEADER)
+            ?: if (request.path == LocalApiWebSocketSession.PATH) EVEN_HUB_CLIENT else null
         val snapshot = LocalApiRequestSnapshot(
             receivedAt = now(),
             method = request.method.take(MAX_METHOD_LENGTH),
             path = request.path.take(MAX_PATH_LENGTH),
-            client = request.header(CLIENT_HEADER)?.take(MAX_HEADER_VALUE_LENGTH),
+            client = client?.take(MAX_HEADER_VALUE_LENGTH),
             origin = request.header("origin")?.take(MAX_HEADER_VALUE_LENGTH),
             userAgent = request.header("user-agent")?.take(MAX_HEADER_VALUE_LENGTH),
             remoteAddress = request.remoteAddress?.take(MAX_ADDRESS_LENGTH),

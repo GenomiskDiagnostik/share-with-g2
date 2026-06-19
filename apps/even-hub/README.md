@@ -22,10 +22,11 @@ This directory contains the Even Hub G2 app.
 
 - Official Vite and Even Hub SDK structure.
 - Package ID: `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Network permission limited to `http://localhost:8765` and
-  `http://127.0.0.1:8765`.
-- Local client probes the hostname alias first and retries the numeric loopback
-  address only after a browser-level network error or timeout.
+- Network permission limited to WebSocket and HTTP on `localhost:8765` and
+  `127.0.0.1:8765`.
+- Local client probes the WebSocket hostname alias first, then numeric
+  WebSocket, hostname HTTP, and numeric HTTP. It falls back only after a
+  browser-level network error or timeout.
 - Runtime-validated `GET /health` and `GET /items` client.
 - Local pairing form shown when the Android API returns `401`.
 - Access key persistence in WebView local storage and Bearer authorization for
@@ -71,7 +72,8 @@ repeats the test, build, and packaging steps and publishes the reviewable
 
 1. Install the Android debug APK and open it so the local server is running.
 2. Sideload the generated `.ehpk` through Even Hub.
-3. Record whether the production WebView can reach Android loopback.
+3. Record whether Android diagnostics receive `GET /even-hub-ws` from the
+   production WebView.
 4. Copy the Android pairing key into Even Hub and confirm an authenticated
    inbox read.
 5. Open Android diagnostics and record the WebView origin, user-agent,

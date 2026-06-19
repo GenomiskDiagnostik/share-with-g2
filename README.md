@@ -12,9 +12,9 @@ The MVP deliberately avoids direct BLE reverse engineering. Notifications should
 
 - Android companion app: Kotlin, Jetpack Compose, Room, DataStore, WorkManager only if needed.
 - Even Hub app: TypeScript, Vite, `@evenrealities/even_hub_sdk`.
-- Data bridge: local HTTP API through `localhost:8765`, with numeric loopback
-  fallback; an HTTPS relay remains deferred until the final physical alias
-  probe is complete.
+- Data bridge: local WebSocket through `localhost:8765`, with numeric loopback
+  and HTTP fallbacks on the same loopback-only Android socket. Cloud remains
+  deferred.
 
 ## MVP scope
 

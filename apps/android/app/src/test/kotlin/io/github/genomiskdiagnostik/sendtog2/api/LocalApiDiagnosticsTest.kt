@@ -53,6 +53,21 @@ class LocalApiDiagnosticsTest {
     }
 
     @Test
+    fun `identifies the dedicated websocket handshake as Even Hub`() {
+        val diagnostics = LocalApiDiagnostics()
+        diagnostics.record(
+            ApiRequest(
+                method = "GET",
+                path = LocalApiWebSocketSession.PATH,
+                headers = mapOf("origin" to "app://even"),
+            ),
+        )
+
+        assertEquals("even-hub", diagnostics.state.value.lastEvenHubRequest?.client)
+        assertEquals("/even-hub-ws", diagnostics.state.value.lastEvenHubRequest?.path)
+    }
+
+    @Test
     fun `bounds diagnostic header values`() {
         val diagnostics = LocalApiDiagnostics()
         diagnostics.record(

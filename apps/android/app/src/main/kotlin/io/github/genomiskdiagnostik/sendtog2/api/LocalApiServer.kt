@@ -32,6 +32,7 @@ class LocalApiServer(
     private val port: Int = DEFAULT_PORT,
     private val diagnosticsRecorder: LocalApiDiagnostics = LocalApiDiagnostics(),
 ) {
+    private val webSocketSession = LocalApiWebSocketSession(router)
     private val bindAddress = InetAddress.getByName(host).also {
         require(it.isLoopbackAddress) { "Local API must bind to a loopback address" }
     }
@@ -127,7 +128,19 @@ class LocalApiServer(
                     remoteAddress = client.inetAddress?.hostAddress,
                 )
                 diagnosticsRecorder.record(request)
-                runBlocking { router.route(request) }
+                if (request.path == LocalApiWebSocketSession.PATH) {
+                    if (webSocketSession.isUpgrade(request)) {
+                        webSocketSession.run(request, input, output)
+                        return
+                    }
+                    ApiResponse(
+                        status = 400,
+                        body = """{"error":"bad_websocket_upgrade"}""",
+                        headers = mapOf("Content-Type" to "application/json; charset=utf-8"),
+                    )
+                } else {
+                    runBlocking { router.route(request) }
+                }
             } catch (_: InvalidRequestException) {
                 ApiResponse(
                     status = 400,

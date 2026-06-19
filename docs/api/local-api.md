@@ -15,6 +15,12 @@ This must be treated as an assumption until tested in the target Even Hub runtim
 - Bind to loopback by default.
 - Return JSON.
 - Use UTF-8.
+- Version 0.1.2 uses `ws://localhost:8765/even-hub-ws` first, followed by the
+  numeric WebSocket alias and then the existing HTTP fallback aliases.
+- WebSocket requests use `{ id, method, path, accessKey?, body? }`; responses
+  use `{ id, status, body }`. The access key is omitted for `/health`.
+- WebSocket access keys must stay in the JSON frame and must not appear in URLs,
+  diagnostics, or subprotocol values.
 - Do not expose arbitrary file paths or content URI streams.
 - M2 introduced wildcard CORS for origin feasibility testing because
   the packaged Even Hub WebView origin is not known yet.
@@ -63,7 +69,7 @@ Response:
 ```json
 {
   "ok": true,
-  "version": "0.1.1"
+  "version": "0.1.2"
 }
 ```
 
@@ -197,9 +203,10 @@ Deferred until needed:
 
 ## Cross-origin and private-network access (M2 feasibility)
 
-- The local API returns `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Headers` (including `Authorization`, `Content-Type`, and `X-Send-To-G2-Client`) on every response, including `OPTIONS` preflight.
+- The local API returns `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Headers` (including `Authorization`, `Content-Type`, and `X-Send-To-G2-Client`) on every HTTP response, including `OPTIONS` preflight.
 - It also returns `Access-Control-Allow-Private-Network: true`. The Even Hub
-  plugin tries `http://localhost:8765` and then `http://127.0.0.1:8765`, which
-  Chrome Private Network Access treats as loopback targets; without this header
-  the preflight is blocked and the plugin reports a network error.
+  HTTP fallback tries `http://localhost:8765` and then
+  `http://127.0.0.1:8765`, which Chrome Private Network Access treats as
+  loopback targets. WebSocket is attempted first because its Upgrade handshake
+  does not use the Fetch CORS preflight path.
 - Debug builds set `trustLoopback = BuildConfig.DEBUG`, which skips the Bearer-key check for protected routes. This is a temporary feasibility measure because the Even app surfaces the glasses text container, not the app HTML form, so the pairing form is unreachable on the glasses. Release builds keep the Bearer requirement. Supersede this with a glasses-friendly pairing flow (e.g. a short code entered via glasses input) before release; see ADR-007/ADR-008.

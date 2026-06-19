@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Close the disproven packaged-WebView loopback experiment and decide whether to
-implement the proposed opt-in encrypted HTTPS relay for version 0.2.0.
+Implement and physically test a standards-based loopback WebSocket transport
+for version 0.1.2 without adding cloud, LAN exposure, or proprietary access.
 
 ## Current phase
 
@@ -12,8 +12,8 @@ Phase 3: Even Hub Shared Inbox reader slice.
 ## Active assumptions
 
 - The Android app is the persistence owner.
-- The tested Even Hub production WebView cannot reach Android through either
-  `localhost` or numeric loopback.
+- The tested Even Hub production WebView cannot reach Android through HTTP
+  Fetch on either `localhost` or numeric loopback; WebSocket remains untested.
 - The MVP handles text and links only.
 - Screen snapshot mode is a separate v0.2 feasibility slice; it captures one
   user-approved image and does not add image/file Sharesheet ingestion.
@@ -79,7 +79,7 @@ Automated status:
 
 ### M2 - Local API feasibility slice
 
-Status: complete; packaged loopback disproven
+Status: active; HTTP Fetch disproven, WebSocket probe in progress
 
 Deliverables:
 
@@ -104,6 +104,8 @@ Deliverables:
 - Authenticated delete-current and clear-all routes. Complete locally.
 - Authenticated read/unread metadata route. Complete locally.
 - Authenticated latest screen snapshot route. Complete locally.
+- Loopback WebSocket adapter with HTTP fallback. Automated implementation
+  complete for version 0.1.2; physical validation pending.
 
 Automated status:
 
@@ -111,12 +113,12 @@ Automated status:
   GitHub Actions.
 - Android unit tests, lint, APK build, and emulator instrumentation pass
   locally or in GitHub Actions.
-- 54 Android unit tests cover parser, persistence, link extraction, API
+- 56 Android unit tests cover parser, persistence, link extraction, API
   routing, authenticated mutations, read-state updates, screen snapshot sizing
   and routing, restart, self-test, and bounded request diagnostics locally.
-- Current Even Hub workflow run for `56c1f04`:
+- Previous version 0.1.1 Even Hub workflow run for `56c1f04`:
   `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27828122995`.
-- Current Android workflow run for `56c1f04`:
+- Previous version 0.1.1 Android workflow run for `56c1f04`:
   `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27828122992`.
 - Artifacts: Even Hub package, debug APKs, Android build reports, and Android
   instrumentation reports.
@@ -135,8 +137,9 @@ Automated status:
 Exit criteria:
 
 - API is reachable from the Android app process.
-- G2 WebView/local app reachability is disproven. Complete.
-- Fallback proposal ADR-013 is documented; acceptance is pending.
+- G2 WebView HTTP Fetch reachability is disproven. Complete.
+- G2 WebView loopback WebSocket reachability. Physical validation pending.
+- Cloud fallback proposal ADR-013 remains proposed and is not accepted.
 
 Physical evidence for version 0.1.0:
 
@@ -179,7 +182,8 @@ Deliverables:
 
 Automated status:
 
-- 34 Even Hub test cases cover API validation, key storage, mutations,
+- 38 Even Hub test cases cover API validation, WebSocket fallback, key storage,
+  mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   rendering, screen snapshot state, reachability, and locale selection. The current
   sandbox permits TypeScript typechecking; GitHub Actions remains the
@@ -220,7 +224,7 @@ Exit criteria:
 ## Accepted implementation decisions
 
 - Android application ID: `io.github.genomiskdiagnostik.sendtog2`.
-- Android version: `0.1.1` (`versionCode` 2).
+- Android version: `0.1.2` (`versionCode` 3).
 - Android min SDK 26; compile and target SDK 36.
 - JDK 17, Gradle 8.13, AGP 8.13.2, and Kotlin 2.3.21.
 - HTML shares flatten to sanitized plain text.
@@ -230,7 +234,9 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.1.1`.
+- Even Hub package version: `0.1.2`.
+- Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
+  aliases only after network failure, as documented in ADR-014.
 - The local API is owned by a visible `dataSync` foreground service started
   from user-visible app and Sharesheet flows, as documented in ADR-011.
 - The in-process server remains restartable, and the foreground notification
@@ -263,7 +269,8 @@ Exit criteria:
 
 ## Open decisions
 
-- Whether to accept ADR-013 and which HTTPS relay deployment should be used.
+- Whether a user-mediated local import is needed if ADR-014 is physically
+  blocked. ADR-013 remains deferred.
 - Whether v0.2 should add undo after confirmed deletion.
 - Whether read/unread should gain filters or automatic "mark read when opened"
   behavior.
@@ -273,8 +280,7 @@ Exit criteria:
 
 ## Immediate next task
 
-Choose whether to accept ADR-013 and provide the HTTPS relay deployment target,
-domain, ownership, and retention policy. If accepted, implement relay mode as
-version 0.2.0 with explicit opt-in and end-to-end encrypted payloads. Continue
-separate physical validation of selected text -> `Send to G2` from at least two
-compatible Android apps.
+Install the version 0.1.2 GitHub artifacts and run physical diagnostics.
+Transport success requires Android to record `GET /even-hub-ws` from Even Hub.
+Continue separate physical validation of selected text -> `Send to G2` from at
+least two compatible Android apps.

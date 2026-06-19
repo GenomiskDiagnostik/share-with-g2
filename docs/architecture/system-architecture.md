@@ -137,9 +137,11 @@ Reader input mapping:
 
 ## Local API design
 
-Primary Even Hub URL for version 0.1.1: `http://localhost:8765`. The client
-falls back to `http://127.0.0.1:8765` only for network errors or timeouts. The
-Android server remains bound to numeric loopback.
+Primary Even Hub URL for version 0.1.2:
+`ws://localhost:8765/even-hub-ws`. The client falls back first to the numeric
+WebSocket loopback alias and then to the existing HTTP aliases only for network
+errors or timeouts. All transports use the same Android socket bound to numeric
+loopback and the same authenticated router.
 
 See `docs/api/local-api.md` for endpoint details.
 
@@ -188,8 +190,10 @@ Even Hub:
 
 ## Validation strategy
 
-The first critical validation is transport reachability:
+The current critical validation is transport reachability:
 
+- Can the Even Hub WebView open
+  `ws://localhost:8765/even-hub-ws` without using Fetch preflight?
 - Can the Even Hub WebView fetch `http://127.0.0.1:8765/health`?
 - Are there cleartext/CORS restrictions?
 - Does `127.0.0.1` resolve to the phone runtime, WebView sandbox, or another context?

@@ -5,6 +5,76 @@ import {
 } from './localApiClient'
 
 describe('LocalApiClient', () => {
+  it('uses loopback websocket before HTTP fetch', async () => {
+    const fetcher = vi.fn()
+    const { factory, sent } = websocketFactory(() => ({
+      id: 1,
+      status: 200,
+      body: JSON.stringify({ ok: true, version: '0.1.2' }),
+    }))
+    const client = new LocalApiClient(
+      undefined,
+      fetcher,
+      3_000,
+      'private-key',
+      [],
+      factory,
+      ['ws://localhost:8765/even-hub-ws'],
+    )
+
+    await expect(client.health()).resolves.toEqual({ ok: true, version: '0.1.2' })
+    expect(factory).toHaveBeenCalledWith('ws://localhost:8765/even-hub-ws')
+    expect(JSON.parse(sent[0]!)).toEqual({ id: 1, method: 'GET', path: '/health' })
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('sends the access key in the websocket frame and not its URL', async () => {
+    const { factory, sent } = websocketFactory(() => ({
+      id: 1,
+      status: 200,
+      body: '[]',
+    }))
+    const client = new LocalApiClient(
+      undefined,
+      vi.fn(),
+      3_000,
+      'private-key',
+      [],
+      factory,
+      ['ws://localhost:8765/even-hub-ws'],
+    )
+
+    await expect(client.items()).resolves.toEqual([])
+    expect(factory).toHaveBeenCalledWith('ws://localhost:8765/even-hub-ws')
+    expect(JSON.parse(sent[0]!)).toMatchObject({
+      method: 'GET',
+      path: '/items',
+      accessKey: 'private-key',
+    })
+  })
+
+  it('falls back to HTTP when websocket cannot connect', async () => {
+    const factory = vi.fn(() => {
+      throw new Error('blocked by runtime')
+    })
+    const fetcher = vi.fn(async () => jsonResponse({ ok: true, version: '0.1.2' }))
+    const client = new LocalApiClient(
+      undefined,
+      fetcher,
+      3_000,
+      undefined,
+      [],
+      factory,
+      ['ws://localhost:8765/even-hub-ws'],
+    )
+
+    await expect(client.health()).resolves.toEqual({ ok: true, version: '0.1.2' })
+    expect(fetcher).toHaveBeenCalledWith(
+      'http://localhost:8765/health',
+      expect.anything(),
+    )
+  })
+
   it('falls back from localhost to the numeric loopback address', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       if (String(input).startsWith('http://localhost')) {
@@ -221,4 +291,30 @@ function jsonResponse(value: unknown): Response {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   })
+}
+
+function websocketFactory(
+  response: (request: unknown) => unknown,
+): {
+  factory: ReturnType<typeof vi.fn<(url: string) => WebSocket>>
+  sent: string[]
+} {
+  const sent: string[] = []
+  const factory = vi.fn((_url: string) => {
+    const socket = {
+      onopen: null as ((event: Event) => void) | null,
+      onmessage: null as ((event: MessageEvent) => void) | null,
+      onerror: null as ((event: Event) => void) | null,
+      onclose: null as ((event: CloseEvent) => void) | null,
+      send: vi.fn((value: string) => {
+        sent.push(value)
+        const reply = JSON.stringify(response(JSON.parse(value) as unknown))
+        queueMicrotask(() => socket.onmessage?.({ data: reply } as MessageEvent))
+      }),
+      close: vi.fn(),
+    }
+    queueMicrotask(() => socket.onopen?.({} as Event))
+    return socket as unknown as WebSocket
+  })
+  return { factory, sent }
 }

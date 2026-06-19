@@ -53,7 +53,7 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - Notification channel and permission-aware preview.
 - Danish local inbox with single-item delete and clear-all.
 - Parser, Android intent, and Room repository tests.
-- Read-only local API on `127.0.0.1:8765`.
+- Loopback-only HTTP and WebSocket API on `127.0.0.1:8765`.
 - `GET /health`, `GET /items`, and CORS preflight handling.
 - Per-installation local API access key stored in DataStore.
 - Copy, reveal, and rotate controls for pairing Even Hub.
@@ -68,7 +68,7 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - Short-lived `mediaProjection` foreground service for snapshot capture.
 - Latest screen snapshot exposed through authenticated `GET /screen-snapshot`.
 - Screen snapshots are scaled to `288 × 144` and kept in memory only.
-- Router-fake and loopback HTTP tests.
+- Router-fake plus loopback HTTP and WebSocket tests.
 
 Link extraction is intentionally bounded to a 1 MiB response with short
 timeouts and at most three redirects. Loopback, link-local, private-network,
