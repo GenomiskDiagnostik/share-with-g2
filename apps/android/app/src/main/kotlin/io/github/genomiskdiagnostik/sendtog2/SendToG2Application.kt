@@ -48,7 +48,6 @@ class SendToG2Application : Application() {
             ),
         )
         applicationScope.launch { accessKeyStore.getOrCreate() }
-        localApiServer.start()
         SharedNotificationService.createChannel(this)
     }
 

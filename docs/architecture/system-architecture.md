@@ -141,13 +141,9 @@ Base URL for MVP: `http://127.0.0.1:8765`.
 
 See `docs/api/local-api.md` for endpoint details.
 
-The API must start in one of these modes:
-
-1. Active only while app/foreground service is running.
-2. Start on demand from main app and stay alive briefly.
-3. Later: persistent foreground service with visible notification if required.
-
-The implementation must test which mode works with the Even Hub runtime before finalizing.
+The API runs in a `dataSync` foreground service started by the user-visible app
+or Sharesheet flow. Its low-importance notification keeps the bridge lifecycle
+explicit and provides a stop action. See ADR-011.
 
 ## Deployment model
 
@@ -217,4 +213,4 @@ Do not build large features before this is known. This is where gremlins like to
 | Notification mirroring disabled | Medium | Document setup; Android notification still useful |
 | Long text unreadable | Medium | Pagination from first G2 slice |
 | Source apps send malformed content | Medium | Defensive parser and tests |
-| Local server lifecycle unreliable | High | Evaluate foreground service or app-open requirement |
+| Android limits long-running data-sync services | Medium | Visible foreground service, explicit stop, and physical lifetime testing |

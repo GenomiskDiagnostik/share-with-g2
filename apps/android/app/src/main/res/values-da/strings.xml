@@ -45,6 +45,11 @@
     <string name="type_text">Tekst</string>
     <string name="type_url">Link</string>
     <string name="local_api_title">Lokal forbindelse</string>
+    <string name="local_api_channel_name">Lokal G2-forbindelse</string>
+    <string name="local_api_channel_description">Holder den lokale indbakke tilg&#230;ngelig for Even Hub.</string>
+    <string name="local_api_notification_title">Send to G2 er tilg&#230;ngelig</string>
+    <string name="local_api_notification_body">Even Hub kan l&#230;se den lokale indbakke, mens denne k&#248;rer.</string>
+    <string name="local_api_notification_stop">Stop</string>
     <string name="local_api_running">API kører kun på denne telefon</string>
     <string name="local_api_stopped">API er stoppet</string>
     <string name="local_api_failed">API kunne ikke starte</string>

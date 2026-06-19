@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import io.github.genomiskdiagnostik.sendtog2.R
 import io.github.genomiskdiagnostik.sendtog2.SendToG2Application
+import io.github.genomiskdiagnostik.sendtog2.api.LocalApiForegroundService
 import io.github.genomiskdiagnostik.sendtog2.domain.ShareParseResult
 import io.github.genomiskdiagnostik.sendtog2.domain.ShareParser
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
@@ -20,6 +21,7 @@ class ShareReceiverActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LocalApiForegroundService.start(this)
 
         lifecycleScope.launch(Dispatchers.IO) {
             val payload = IntentSharePayloadFactory.from(intent, callingPackage)

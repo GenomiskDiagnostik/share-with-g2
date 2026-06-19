@@ -92,6 +92,8 @@ Deliverables:
 - Even Hub API validation and reachability tests. Complete.
 - GitHub Actions `.ehpk` artifact. Complete.
 - Restartable in-process API lifecycle. Complete locally.
+- Foreground local-API lifecycle with explicit notification stop action.
+  Complete locally; GitHub emulator validation pending.
 - Privacy-safe request diagnostics and Android self-test. Complete locally.
 - Explicit Even Hub client marker for origin/user-agent capture. Complete locally.
 - Per-installation access key and Android pairing controls. Complete locally.
@@ -106,15 +108,20 @@ Automated status:
   GitHub Actions.
 - Android unit tests, lint, APK build, and emulator instrumentation pass
   locally or in GitHub Actions.
-- 53 Android unit tests cover parser, persistence, link extraction, API
+- 54 Android unit tests cover parser, persistence, link extraction, API
   routing, authenticated mutations, read-state updates, screen snapshot sizing
   and routing, restart, self-test, and bounded request diagnostics locally.
-- Even Hub workflow run:
-  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638537`.
-- Android workflow run:
-  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27467638539`.
+- Current Even Hub workflow run for `6644d91`:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27696694011`.
+- Current Android workflow run for `6644d91`:
+  `https://github.com/GenomiskDiagnostik/share-with-g2/actions/runs/27696256867`.
 - Artifacts: Even Hub package, debug APKs, Android build reports, and Android
   instrumentation reports.
+- The current GitHub artifacts were downloaded and inspected on 2026-06-19.
+  Android reports contain 54 passing JVM tests, 7 passing instrumented tests,
+  no failures, and lint warnings only. The packaged Even Hub JavaScript contains
+  the loopback URL, client marker, pairing storage, authorization, and screen
+  snapshot routes expected at `6644d91`.
 - The Android diagnostics card can now run a loopback self-test, restart the
   server, count requests, and show the last identified Even Hub origin and
   user-agent without recording inbox content.
@@ -201,9 +208,10 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- The local API runs for the Android application process lifetime.
-- The in-process server is restartable but is not promoted to a foreground
-  service until physical background-lifetime evidence requires it.
+- The local API is owned by a visible `dataSync` foreground service started
+  from user-visible app and Sharesheet flows, as documented in ADR-011.
+- The in-process server remains restartable, and the foreground notification
+  provides an explicit stop action.
 - M2 wildcard CORS is temporary until the packaged WebView origin is measured.
 - `/health` is public; all `/items` routes require the per-installation Bearer
   key documented in ADR-007.
@@ -233,7 +241,6 @@ Exit criteria:
 ## Open decisions
 
 - Whether Even Hub WebView can reach Android loopback.
-- Whether Android needs a foreground service for local server lifetime.
 - Whether v0.2 should add undo after confirmed deletion.
 - Whether read/unread should gain filters or automatic "mark read when opened"
   behavior.
@@ -243,7 +250,9 @@ Exit criteria:
 
 ## Immediate next task
 
-Build and install the new artifacts, pair Even Hub with the Android key, and
-execute the physical-phone reachability, reader mutation, read-state refresh,
-screen snapshot, and link-content scripts. Use Android diagnostics to record
-the packaged WebView origin and background lifetime before release acceptance.
+Install the verified artifacts from Android run `27696256867` and Even Hub run
+`27696694011`, pair Even Hub with the Android key, and execute the physical-phone
+reachability, reader mutation, read-state refresh, screen snapshot, and
+link-content scripts. ADB installation remains pending because no device was
+connected during artifact inspection. Use Android diagnostics to record the
+packaged WebView origin and background lifetime before release acceptance.

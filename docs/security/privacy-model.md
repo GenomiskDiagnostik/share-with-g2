@@ -71,6 +71,8 @@ after JavaScript execution therefore remain URL-only.
 
 - Notifications may be mirrored to glasses depending on Even app/user settings.
 - Preview length must be short.
+- An ongoing low-importance notification is visible while the local API is
+  available and includes an explicit action to stop the bridge.
 - Add settings later for disabling notification previews if needed.
 
 ## Threats and mitigations

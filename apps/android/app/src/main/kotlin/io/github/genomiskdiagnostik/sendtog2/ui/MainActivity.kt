@@ -53,6 +53,7 @@ import io.github.genomiskdiagnostik.sendtog2.R
 import io.github.genomiskdiagnostik.sendtog2.SendToG2Application
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiPhase
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiDiagnosticsState
+import io.github.genomiskdiagnostik.sendtog2.api.LocalApiForegroundService
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiSelfTestState
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiState
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
@@ -102,6 +103,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LocalApiForegroundService.start(this)
         notificationPermissionGranted = hasNotificationPermission()
 
         setContent {

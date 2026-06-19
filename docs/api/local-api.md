@@ -158,9 +158,10 @@ The current Android server implements:
 - `OPTIONS`
 - JSON `400`, `401`, `404`, and `405` responses
 
-It binds only to `127.0.0.1`. The server runs for the lifetime of the Android
-application process. This is a feasibility lifecycle, not the final background
-execution design.
+It binds only to `127.0.0.1`. The server is owned by a visible Android
+`dataSync` foreground service started from user-visible app and Sharesheet
+flows. The ongoing notification provides an explicit stop action; opening or
+sharing to Send to G2 starts the bridge again.
 
 ## Pairing contract
 
