@@ -52,7 +52,9 @@ export class LocalApiClient {
     private readonly fallbackBaseUrls: readonly string[] =
       baseUrl === DEFAULT_API_BASE_URL ? [FALLBACK_API_BASE_URL] : [],
     private readonly webSocketFactory: WebSocketFactory | undefined =
-      typeof WebSocket === 'undefined' ? undefined : url => new WebSocket(url),
+      typeof window === 'undefined' || typeof WebSocket === 'undefined'
+        ? undefined
+        : url => new WebSocket(url),
     private readonly webSocketUrls: readonly string[] =
       baseUrl === DEFAULT_API_BASE_URL
         ? [DEFAULT_WEBSOCKET_URL, FALLBACK_WEBSOCKET_URL]

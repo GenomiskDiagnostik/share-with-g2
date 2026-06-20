@@ -35,6 +35,8 @@ import {
   type InboxMenuPage,
 } from './inbox/inboxMenu'
 import { ReaderScrollGate } from './inbox/readerScrollGate'
+import { isReaderReturnEvent } from './inbox/readerGesture'
+import { shouldUseInboxMenuStartup } from './inbox/inboxStartup'
 import { DEMO_ITEMS, renderReader, type ReaderView } from './inbox/renderReader'
 import { renderSnapshot, type SnapshotState, type SnapshotView } from './snapshot/renderSnapshot'
 import { decodeBase64Image } from './snapshot/imageData'
@@ -88,10 +90,7 @@ async function main() {
     renderWeb(root, state, view, strings, demoMode ? strings.demoMode : undefined)
     if (!bridge) return
 
-    if (
-      (state.status === 'ready' || state.status === 'empty') &&
-      glassesMode === 'menu'
-    ) {
+    if (hasInboxMenuState(state) && glassesMode === 'menu') {
       const menu = createInboxMenu(state, menuPageIndex, strings)
       menuPageIndex = menu.pageIndex
       const key = `menu:${menu.entries.map(entry => entry.label).join('|')}`
@@ -233,31 +232,43 @@ async function main() {
     demoMode ? strings.demoMode : undefined,
   )
 
+  let enablePeriodicRefresh = false
+  if (demoMode) {
+    await dispatch({ type: 'load', items: DEMO_ITEMS })
+  } else {
+    client = new LocalApiClient(
+      undefined,
+      undefined,
+      undefined,
+      loadAccessKey(),
+    )
+    try {
+      await client.health()
+      await dispatch({ type: 'load', items: await client.items() })
+      enablePeriodicRefresh = true
+    } catch (error) {
+      await dispatch({ type: 'fail', reason: classifyFailure(error) })
+    }
+  }
+
   try {
     bridge = await waitForEvenAppBridge()
     const initialView = renderReader(state, locale)
-    await bridge.createStartUpPageContainer(
-      new CreateStartUpPageContainer({
-        containerTotalNum: 1,
-        textObject: [
-          new TextContainerProperty({
-            xPosition: 0,
-            yPosition: 0,
-            width: 576,
-            height: 288,
-            borderWidth: 0,
-            borderColor: 5,
-            paddingLength: 8,
-            containerID: CONTAINER_ID,
-            containerName: CONTAINER_NAME,
-            content: initialView.glassText,
-            isEventCapture: 1,
-          }),
-        ],
-      }),
-    )
-    glassesSurface = 'text'
-    glassesRenderKey = `text:${initialView.glassText}`
+    if (shouldUseInboxMenuStartup(state.status, glassesMode)) {
+      const menu = createInboxMenu(state, menuPageIndex, strings)
+      menuPageIndex = menu.pageIndex
+      await bridge.createStartUpPageContainer(
+        createInboxMenuStartupContainer(menu, strings),
+      )
+      glassesSurface = 'menu'
+      glassesRenderKey = `menu:${menu.entries.map(entry => entry.label).join('|')}`
+    } else {
+      await bridge.createStartUpPageContainer(
+        createReaderStartupContainer(initialView.glassText),
+      )
+      glassesSurface = 'text'
+      glassesRenderKey = `text:${initialView.glassText}`
+    }
     bindBridgeActions(
       bridge,
       () => state,
@@ -269,28 +280,14 @@ async function main() {
       scrollGate,
     )
   } catch {
+    bridge = undefined
     root.dataset.bridge = 'unavailable'
   }
 
-  if (demoMode) {
-    await dispatch({ type: 'load', items: DEMO_ITEMS })
-    return
-  }
-
-  client = new LocalApiClient(
-    undefined,
-    undefined,
-    undefined,
-    loadAccessKey(),
-  )
-  try {
-    await client.health()
-    await dispatch({ type: 'load', items: await client.items() })
+  if (enablePeriodicRefresh) {
     window.setInterval(() => {
       void refreshItems(false)
     }, REFRESH_INTERVAL_MS)
-  } catch (error) {
-    await dispatch({ type: 'fail', reason: classifyFailure(error) })
   }
 }
 
@@ -591,12 +588,30 @@ function createInboxMenu(
   )
 }
 
+function hasInboxMenuState(state: ReaderState): boolean {
+  return state.status === 'ready' || state.status === 'empty'
+}
+
 function createInboxMenuContainer(
   menu: InboxMenuPage,
   strings: ReturnType<typeof getStrings>,
 ): RebuildPageContainer {
+  return new RebuildPageContainer(createInboxMenuLayout(menu, strings))
+}
+
+function createInboxMenuStartupContainer(
+  menu: InboxMenuPage,
+  strings: ReturnType<typeof getStrings>,
+): CreateStartUpPageContainer {
+  return new CreateStartUpPageContainer(createInboxMenuLayout(menu, strings))
+}
+
+function createInboxMenuLayout(
+  menu: InboxMenuPage,
+  strings: ReturnType<typeof getStrings>,
+) {
   const title = `${strings.readerTitle} ${menu.pageIndex + 1}/${menu.pageCount}`
-  return new RebuildPageContainer({
+  return {
     containerTotalNum: 2,
     textObject: [
       new TextContainerProperty({
@@ -631,11 +646,32 @@ function createInboxMenuContainer(
         isEventCapture: 1,
       }),
     ],
-  })
+  }
 }
 
 function createReaderContainer(content: string): RebuildPageContainer {
   return new RebuildPageContainer({
+    containerTotalNum: 1,
+    textObject: [
+      new TextContainerProperty({
+        xPosition: 0,
+        yPosition: 0,
+        width: 576,
+        height: 288,
+        borderWidth: 0,
+        borderColor: 5,
+        paddingLength: 8,
+        containerID: CONTAINER_ID,
+        containerName: CONTAINER_NAME,
+        content,
+        isEventCapture: 1,
+      }),
+    ],
+  })
+}
+
+function createReaderStartupContainer(content: string): CreateStartUpPageContainer {
+  return new CreateStartUpPageContainer({
     containerTotalNum: 1,
     textObject: [
       new TextContainerProperty({
@@ -1078,7 +1114,7 @@ function bindBridgeActions(
 
     const textType = event.textEvent?.eventType ?? null
     const eventType = textType ?? sysType
-    if (eventType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
+    if (isReaderReturnEvent(eventType)) {
       void showMenu()
       return
     }

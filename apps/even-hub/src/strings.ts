@@ -132,7 +132,7 @@ const strings: Record<SupportedLocale, AppStrings> = {
     settingsKeyCleared: 'Den gemte nøgle er ryddet.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · side ${page}/${pageCount}`,
-    readerHelp: 'Scroll: side · Dobbeltklik: tilbage til menu',
+    readerHelp: 'Scroll: side · Tryk: tilbage til menu',
     itemPickerTitle: 'Vælg element',
     menuHelp: 'Rul: vælg · Tryk: åbn · Dobbelttryk: luk',
     menuPrevious: 'Forrige liste',
@@ -219,7 +219,7 @@ const strings: Record<SupportedLocale, AppStrings> = {
     settingsKeyCleared: 'The saved key was cleared.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · page ${page}/${pageCount}`,
-    readerHelp: 'Scroll: page · Double-click: back to menu',
+    readerHelp: 'Scroll: page · Click: back to menu',
     itemPickerTitle: 'Choose item',
     menuHelp: 'Scroll: select · Click: open · Double-click: close',
     menuPrevious: 'Previous list',

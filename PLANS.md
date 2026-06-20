@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Ship version 0.2.0 with repaired screen-image capture and explicitly consented
-low-FPS app/display sharing at 1,000 or 500 ms intervals.
+Ship Even Hub version 0.2.1 with direct native-menu startup and a reliable
+single-click path from an open reader back to the inbox menu.
 
 ## Current phase
 
@@ -168,6 +168,13 @@ Physical evidence for version 0.1.2:
 - Slow scrolling can bounce from a page boundary back to the same page top or
   previous page, motivating ADR-015.
 
+Physical evidence for version 0.2.0:
+
+- The startup text-to-list rebuild is not applied until a later phone-side item
+  selection triggers another render.
+- Reader double-click is not a reliable physical return path to the inbox menu.
+- ADR-017 replaces both behaviors in version 0.2.1.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -195,11 +202,13 @@ Deliverables:
   locally for version 0.1.3; physical validation pending.
 - Pairing input limited to the settings page. Complete and browser-validated
   for version 0.1.3.
+- Direct native-list startup and reader single-click return. Complete locally
+  for version 0.2.1; physical validation pending.
 
 Automated status:
 
-- 47 Even Hub test cases cover API validation, WebSocket fallback, native-menu
-  paging, scroll gating, key storage, mutations,
+- 52 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+  startup and paging, reader return gestures, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   rendering, screen snapshot state, reachability, and locale selection. The current
   sandbox permits TypeScript typechecking; GitHub Actions remains the
@@ -250,7 +259,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.0`.
+- Even Hub package version: `0.2.1`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
 - The local API is owned by a visible `dataSync` foreground service started
@@ -267,9 +276,10 @@ Exit criteria:
 - Android and Even Hub select Danish or English from the runtime locale.
 - Reader body pages are capped at 700 characters, preserving paragraph or word
   boundaries where possible.
-- G2 opens on a native inbox list; list scrolling selects, list click opens,
-  reader scrolling changes pages, and reader double-click returns to the menu,
-  as documented in ADR-015.
+- G2 opens directly on a native inbox list after the bounded local load; list
+  scrolling selects, list click opens, reader scrolling changes pages, and
+  reader single-click or double-click returns to the menu, as documented in
+  ADR-017.
 - Public links are stored immediately, then enriched in WorkManager without
   cookies; failures retain the original URL.
 - Link retrieval blocks local/private destinations, follows at most three
@@ -298,7 +308,6 @@ Exit criteria:
 
 ## Immediate next task
 
-Complete version 0.2.0 low-FPS screen sharing and artifacts, then physically
-validate app/display selection, Stop behavior, orientation, 1,000/500 ms image
-updates, heat, and battery use. Continue separate validation of selected text
-to `Send to G2` from at least two compatible Android apps.
+Complete version 0.2.1 menu-startup artifacts, then physically validate that G2
+opens directly on the inbox menu and that a single reader click returns to it.
+Continue low-FPS screen-sharing and selected-text system validation separately.
