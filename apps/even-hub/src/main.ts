@@ -36,8 +36,12 @@ import {
   type InboxMenuPage,
 } from './inbox/inboxMenu'
 import { ReaderScrollGate } from './inbox/readerScrollGate'
-import { isReaderReturnEvent } from './inbox/readerGesture'
 import { rebuildWithRetry } from './inbox/rebuildWithRetry'
+import { R1InputTracker } from './inbox/r1Input'
+import {
+  RefreshCoordinator,
+  type RefreshOutcome,
+} from './inbox/refreshCoordinator'
 import { DEMO_ITEMS, renderReader, type ReaderView } from './inbox/renderReader'
 import { renderSnapshot, type SnapshotState, type SnapshotView } from './snapshot/renderSnapshot'
 import { decodeBase64Image } from './snapshot/imageData'
@@ -86,6 +90,8 @@ async function main() {
   let glassesRenderKey = ''
   let menuRebuildNotBefore = 0
   let menuPageIndex = 0
+  let refreshCoordinator: RefreshCoordinator | undefined
+  let hasLoadedItems = false
   const scrollGate = new ReaderScrollGate()
 
   const render = async () => {
@@ -197,24 +203,38 @@ async function main() {
     }
   }
 
-  const refreshItems = async (manual: boolean) => {
+  const performRefresh = async (): Promise<RefreshOutcome> => {
     if (demoMode) {
       await dispatch({ type: 'refresh', items: DEMO_ITEMS })
-      if (manual) setText(root, '#mutation-status', strings.refreshSuccess)
-      return
+      hasLoadedItems = true
+      return 'success'
     }
-    if (!client) return
+    if (!client) return 'retryable-failure'
     try {
       await dispatch({ type: 'refresh', items: await client.items() })
-      if (manual) setText(root, '#mutation-status', strings.refreshSuccess)
+      hasLoadedItems = true
+      return 'success'
     } catch (error) {
       const failure = classifyFailure(error)
       if (failure === 'unauthorized') {
         await dispatch({ type: 'fail', reason: failure })
-      } else if (manual) {
-        setText(root, '#mutation-status', strings.refreshFailure)
+        return 'terminal-failure'
       }
+      if (!hasLoadedItems) await dispatch({ type: 'fail', reason: failure })
+      return 'retryable-failure'
     }
+  }
+
+  const refreshItems = async (manual: boolean) => {
+    const outcome = refreshCoordinator
+      ? await refreshCoordinator.refreshNow()
+      : await performRefresh()
+    if (!manual) return
+    setText(
+      root,
+      '#mutation-status',
+      outcome === 'success' ? strings.refreshSuccess : strings.refreshFailure,
+    )
   }
 
   const updateCurrentRead = async () => {
@@ -275,6 +295,7 @@ async function main() {
       bridge,
       () => state,
       () => glassesMode,
+      () => glassesSurface,
       () => createInboxMenu(state, menuPageIndex, strings),
       handleMenuEntry,
       showMenu,
@@ -286,7 +307,6 @@ async function main() {
     root.dataset.bridge = 'unavailable'
   }
 
-  let enablePeriodicRefresh = false
   if (demoMode) {
     await dispatch({ type: 'load', items: DEMO_ITEMS })
   } else {
@@ -296,19 +316,17 @@ async function main() {
       undefined,
       loadAccessKey(),
     )
-    try {
-      await client.health()
-      await dispatch({ type: 'load', items: await client.items() })
-      enablePeriodicRefresh = true
-    } catch (error) {
-      await dispatch({ type: 'fail', reason: classifyFailure(error) })
-    }
-  }
-
-  if (enablePeriodicRefresh) {
-    window.setInterval(() => {
-      void refreshItems(false)
-    }, REFRESH_INTERVAL_MS)
+    refreshCoordinator = new RefreshCoordinator(
+      performRefresh,
+      undefined,
+      undefined,
+      undefined,
+      REFRESH_INTERVAL_MS,
+    )
+    refreshCoordinator.start()
+    window.addEventListener('beforeunload', () => refreshCoordinator?.stop(), {
+      once: true,
+    })
   }
 }
 
@@ -1096,59 +1114,47 @@ function bindBridgeActions(
   bridge: Awaited<ReturnType<typeof waitForEvenAppBridge>>,
   getState: () => ReaderState,
   getMode: () => GlassesMode,
+  getSurface: () => 'text' | 'menu',
   getMenu: () => InboxMenuPage,
   handleMenuEntry: (entry: InboxMenuEntry) => Promise<void>,
   showMenu: () => Promise<void>,
   dispatch: (action: ReaderAction) => Promise<void>,
   scrollGate: ReaderScrollGate,
 ) {
+  const inputTracker = new R1InputTracker()
   const unsubscribe = bridge.onEvenHubEvent(event => {
-    const sysType = event.sysEvent?.eventType ?? null
-    if (
-      sysType === OsEventTypeList.SYSTEM_EXIT_EVENT ||
-      sysType === OsEventTypeList.ABNORMAL_EXIT_EVENT
-    ) {
+    const input = inputTracker.handle(event)
+    if (input.kind === 'exit') {
       unsubscribe()
       return
     }
 
     if (getMode() === 'menu') {
-      const textType = event.textEvent?.eventType ?? null
-      if (
-        !event.listEvent &&
-        isReaderReturnEvent(textType ?? sysType)
-      ) {
+      if (input.kind !== 'click') return
+      if (getSurface() === 'text') {
         void showMenu()
         return
       }
-      const listType = event.listEvent?.eventType ?? sysType
-      if (listType === OsEventTypeList.CLICK_EVENT && event.listEvent) {
-        const entry = findInboxMenuEntry(
-          getMenu(),
-          event.listEvent.currentSelectItemName,
-        )
-        if (entry) void handleMenuEntry(entry)
-      } else if (listType === OsEventTypeList.DOUBLE_CLICK_EVENT) {
-        void bridge.shutDownPageContainer(1)
-      }
+      const menu = getMenu()
+      const entry = findInboxMenuEntry(
+        menu,
+        input.selectedName,
+        input.selectedIndex,
+      ) ?? menu.entries[0]
+      if (entry) void handleMenuEntry(entry)
       return
     }
 
-    const textType = event.textEvent?.eventType ?? null
-    const eventType = textType ?? sysType
-    if (isReaderReturnEvent(eventType)) {
+    if (input.kind === 'click' || input.kind === 'double-click') {
       void showMenu()
       return
     }
-    if (
-      eventType !== OsEventTypeList.SCROLL_TOP_EVENT &&
-      eventType !== OsEventTypeList.SCROLL_BOTTOM_EVENT
-    ) return
+    if (input.kind !== 'scroll-top' && input.kind !== 'scroll-bottom') return
 
     const state = getState()
     if (state.status !== 'ready') return
     const action = scrollGate.actionFor(
-      eventType === OsEventTypeList.SCROLL_TOP_EVENT ? 'top' : 'bottom',
+      input.kind === 'scroll-top' ? 'top' : 'bottom',
       state.pageIndex,
       getCurrentPages(state).length,
     )

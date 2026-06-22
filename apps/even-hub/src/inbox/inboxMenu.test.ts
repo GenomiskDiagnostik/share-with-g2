@@ -49,6 +49,15 @@ describe('inbox menu', () => {
     expect(page).toMatchObject({ pageIndex: 0, pageCount: 1 })
   })
 
+  it('resolves the current entry by index when a click omits its name', () => {
+    const page = buildInboxMenu([item('one'), item('two')], 0, labels)
+
+    expect(findInboxMenuEntry(page, undefined, 2)).toMatchObject({
+      kind: 'item',
+      itemIndex: 1,
+    })
+  })
+
   it('bounds item labels to the SDK limit', () => {
     const page = buildInboxMenu([item('one', 'x'.repeat(100))], 0, labels)
 

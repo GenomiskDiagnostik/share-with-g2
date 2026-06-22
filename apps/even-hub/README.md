@@ -27,7 +27,9 @@ This directory contains the Even Hub G2 app.
 - Local client probes the WebSocket hostname alias first, then numeric
   WebSocket, hostname HTTP, and numeric HTTP. It falls back only after a
   browser-level network error or timeout.
-- Runtime-validated `GET /health` and `GET /items` client.
+- Runtime-validated `GET /health` and `GET /items` client. Inbox startup goes
+  directly to the authenticated items request so it does not pay for a second
+  short-lived WebSocket connection first.
 - Pairing form lives only under settings; a `401` links there without showing
   duplicate key fields on the inbox or snapshot front page.
 - Access key persistence in WebView local storage and Bearer authorization for
@@ -38,9 +40,15 @@ This directory contains the Even Hub G2 app.
   packaged Even Hub request from its own self-test.
 - Loading, empty, failure, and ready reader states.
 - Paragraph/word-aware pagination for long text.
-- Native G2 list menu for visible item selection and opening.
+- Native G2 list menu for visible item selection and opening. R1 selection is
+  remembered from list scroll events, and a single click opens it whether the
+  physical host reports the click as a list, text, or system event.
 - Reader scroll changes pages with boundary-bounce suppression; reader
-  double-click returns to the inbox menu.
+  single-click or double-click returns to the inbox menu. Double-click no
+  longer closes the app from the native menu.
+- Inbox refresh is single-flight. A failed first connection retries after one
+  and three seconds and then continues normal ten-second polling, so startup
+  can recover without repeated phone-side refreshes.
 - Danish and English reader states selected from the WebView locale.
 - Danish remains the MVP UI language. Even Hub package metadata uses `en` as
   the required fallback because its current language enum has no `da` value.

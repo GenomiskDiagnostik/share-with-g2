@@ -59,9 +59,13 @@ export function buildInboxMenu(
 export function findInboxMenuEntry(
   page: InboxMenuPage,
   selectedName: string | undefined,
+  selectedIndex?: number,
 ): InboxMenuEntry | undefined {
-  if (!selectedName) return undefined
-  return page.entries.find(entry => entry.label === selectedName)
+  const namedEntry = selectedName
+    ? page.entries.find(entry => entry.label === selectedName)
+    : undefined
+  if (namedEntry) return namedEntry
+  return selectedIndex === undefined ? undefined : page.entries[selectedIndex]
 }
 
 export function getInboxMenuPageIndex(itemIndex: number): number {

@@ -103,6 +103,11 @@ The canonical JSON shape lives in `shared/schemas/shared-item.schema.json`. Andr
 8. User actions call local API mutations.
 9. Even Hub app reloads or updates local state after mutations.
 
+Inbox startup requests `/items` directly. A single-flight refresh coordinator
+retries transient startup failures after one and three seconds, then polls every
+ten seconds. Authentication failures stop automatic retry until settings are
+corrected and the app is reloaded.
+
 ## Data flow
 
 ### Text/link ingest
@@ -130,11 +135,12 @@ GET /items
 
 Reader input mapping:
 
-- Native inbox list scroll: move the visible item selection.
-- Native inbox list click: open the selected item.
+- Native inbox list scroll: move and remember the visible item selection.
+- R1 single-click: open the remembered list selection regardless of whether
+  the physical host reports a list, text, or system event.
 - Reader scroll up/down: previous/next page with opposite-boundary bounce
   suppression and no update at the first/final page.
-- Reader double-click: return to the native inbox list.
+- Reader single-click or double-click: return to the native inbox list.
 - The phone WebView exposes a visible item picker plus previous/next page
   actions for browser QA.
 

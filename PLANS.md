@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Ship Even Hub version 0.2.2 with immediate G2 startup plus a delayed, checked,
-and retryable transition to the native inbox menu.
+Ship Even Hub version 0.2.3 with normalized R1 click handling and automatic
+recovery when the first local inbox request fails.
 
 ## Current phase
 
@@ -182,6 +182,18 @@ Physical evidence for version 0.2.1:
 - ADR-018 restores immediate startup and adds bounded menu rebuild retries in
   version 0.2.2.
 
+Physical evidence for version 0.2.2:
+
+- R1 scroll changes the native list selection, but single-click does not open
+  the selected entry because the click and selection may arrive in separate
+  event payloads.
+- Long press exits through the host as expected; menu double-click is not a
+  useful separate exit gesture.
+- A failed first inbox connection does not recover automatically because
+  version 0.2.2 enables polling only after successful startup.
+- Startup performs sequential `/health` and `/items` requests over separate
+  short-lived WebSocket connections, adding avoidable latency.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -211,13 +223,18 @@ Deliverables:
   for version 0.1.3.
 - Direct native-list startup and reader single-click return. Complete locally
   for version 0.2.1; physical validation pending.
+- Cross-source R1 click normalization with remembered scroll selection.
+  Complete locally for version 0.2.3; physical validation pending.
+- Single-flight inbox refresh with 1/3-second startup retries and unconditional
+  10-second recovery polling. Complete locally for version 0.2.3.
 
 Automated status:
 
-- 53 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+- 62 Even Hub test cases cover API validation, WebSocket fallback, native-menu
   rebuild recovery and paging, reader return gestures, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
-  rendering, screen snapshot state, reachability, and locale selection. The current
+  R1 event normalization, refresh concurrency/recovery, rendering, screen
+  snapshot state, reachability, and locale selection. The current
   sandbox permits TypeScript typechecking; GitHub Actions remains the
   authoritative Vitest run.
 - TypeScript and Vite production build pass locally.
@@ -266,7 +283,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.2`.
+- Even Hub package version: `0.2.3`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
 - The local API is owned by a visible `dataSync` foreground service started
@@ -283,10 +300,11 @@ Exit criteria:
 - Android and Even Hub select Danish or English from the runtime locale.
 - Reader body pages are capped at 700 characters, preserving paragraph or word
   boundaries where possible.
-- G2 opens directly on a native inbox list after the bounded local load; list
-  scrolling selects, list click opens, reader scrolling changes pages, and
-  reader single-click or double-click returns to the menu, as documented in
-  ADR-017.
+- G2 creates an immediate loading surface and rebuilds it as a native inbox
+  list after loading. List scrolling remembers the selection, a single R1
+  click from any documented event source opens it, reader scrolling changes
+  pages, and reader single-click or double-click returns to the menu, as
+  documented in ADR-019.
 - Public links are stored immediately, then enriched in WorkManager without
   cookies; failures retain the original URL.
 - Link retrieval blocks local/private destinations, follows at most three
@@ -295,8 +313,10 @@ Exit criteria:
   remains a release gate.
 - Read/unread is implemented through authenticated `PATCH /items/{id}` with a
   boolean-only body.
-- Even Hub polls the local inbox periodically and offers manual refresh while
-  preserving the current selection when possible.
+- Even Hub loads `/items` directly, retries transient startup failures after
+  one and three seconds, then polls every ten seconds. Startup, polling, and
+  manual refresh share one active request and preserve the current selection
+  when possible.
 - Screen sharing uses one explicit Android MediaProjection consent session,
   stores only the latest in-memory PNG, and exposes it through authenticated
   `GET /screen-snapshot`. Android offers 1,000 and 500 ms intervals and Even Hub
@@ -315,7 +335,8 @@ Exit criteria:
 
 ## Immediate next task
 
-Complete version 0.2.2 startup-recovery artifacts, then physically validate that
-G2 first shows loading and automatically changes to the inbox menu without a
-phone action. Continue reader-return, screen-sharing, and selected-text system
+Publish version 0.2.3 artifacts, then physically validate that R1 scroll plus
+single-click opens the selected menu entry, a reader single-click returns to
+the menu, and a temporarily unavailable Android service recovers without
+repeated phone-side refreshes. Continue screen-sharing and selected-text system
 validation separately.
