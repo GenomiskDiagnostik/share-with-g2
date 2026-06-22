@@ -33,6 +33,28 @@ describe('R1 input tracker', () => {
     },
   )
 
+  it.each(['listEvent', 'textEvent', 'sysEvent'] as const)(
+    'treats an omitted zero-value event type from %s as click',
+    source => {
+      const tracker = new R1InputTracker()
+      expect(tracker.handle({ [source]: {} })).toMatchObject({ kind: 'click' })
+    },
+  )
+
+  it('keeps selection data when a list click omits its zero-value type', () => {
+    const tracker = new R1InputTracker()
+    expect(tracker.handle({
+      listEvent: {
+        currentSelectItemName: '2. [New] Selected item',
+        currentSelectItemIndex: 2,
+      },
+    })).toEqual({
+      kind: 'click',
+      selectedName: '2. [New] Selected item',
+      selectedIndex: 2,
+    })
+  })
+
   it('prioritizes a click when the host also includes a scroll event', () => {
     const tracker = new R1InputTracker()
     expect(tracker.handle({

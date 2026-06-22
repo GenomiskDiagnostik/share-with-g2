@@ -48,11 +48,12 @@ export class R1InputTracker {
     }
 
     const eventTypes = [
-      listEvent?.eventType,
-      event.textEvent?.eventType,
-      event.sysEvent?.eventType,
-      ...findRawValues(event.jsonData, 'eventtype'),
-    ].map(value => OsEventTypeList.fromJson(value))
+      eventTypeFromPart(listEvent),
+      eventTypeFromPart(event.textEvent),
+      eventTypeFromPart(event.sysEvent),
+      ...findRawValues(event.jsonData, 'eventtype')
+        .map(value => OsEventTypeList.fromJson(value)),
+    ]
       .filter((value): value is OsEventTypeList => value !== undefined)
 
     const rawSelectedName = findRawValues(event.jsonData, 'currentselectitemname')
@@ -71,6 +72,13 @@ export class R1InputTracker {
       ...(this.selectedIndex === undefined ? {} : { selectedIndex: this.selectedIndex }),
     }
   }
+}
+
+function eventTypeFromPart(part: EventPart | undefined): OsEventTypeList | undefined {
+  if (!part) return undefined
+  return OsEventTypeList.fromJson(
+    part.eventType ?? OsEventTypeList.CLICK_EVENT,
+  )
 }
 
 function findRawValues(

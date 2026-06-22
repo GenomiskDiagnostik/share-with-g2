@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Ship Even Hub version 0.2.4 with raw SDK event fallback plus consistent
-single-/double-click behavior on G2 and the Even Hub phone view.
+Ship Even Hub version 0.2.5 with official SDK 0.0.11 and correct decoding of
+protobuf's omitted zero-valued `CLICK_EVENT`.
 
 ## Current phase
 
@@ -202,6 +202,14 @@ Physical evidence for version 0.2.3:
   browser `dblclick` from reaching the original button.
 - Long press continues to invoke the host-managed app-exit confirmation.
 
+Physical evidence for version 0.2.4:
+
+- Native R1 scrolling still works, while click and double-click navigation do
+  not. Raw payload traversal is insufficient because protobuf omits the
+  zero-valued `CLICK_EVENT` field entirely.
+- Official Even Hub templates explicitly require an existing event envelope
+  with missing `eventType` to be interpreted as click.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -239,10 +247,13 @@ Deliverables:
   state. Complete locally for version 0.2.4; physical validation pending.
 - Phone item tap arbitration: single tap selects, double tap opens the existing
   delete confirmation. Complete locally for version 0.2.4.
+- Official Even Hub SDK 0.0.11 and protobuf-zero click decoding for list, text,
+  and system envelopes. Complete locally for version 0.2.5; physical validation
+  pending.
 
 Automated status:
 
-- 70 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+- 74 Even Hub test cases cover API validation, WebSocket fallback, native-menu
   rebuild recovery and paging, reader return gestures, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   R1 event normalization, refresh concurrency/recovery, rendering, screen
@@ -295,7 +306,8 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.4`.
+- Even Hub package version: `0.2.5`.
+- Even Hub SDK and minimum package SDK version: `0.0.11`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
 - The local API is owned by a visible `dataSync` foreground service started
@@ -347,7 +359,8 @@ Exit criteria:
 
 ## Immediate next task
 
-Publish version 0.2.4 artifacts, then physically validate menu single-click,
-menu double-click plus confirmed/cancelled deletion, reader double-click back,
-host-confirmed long-press exit, and phone single-/double-tap behavior. Continue
-screen-sharing and selected-text system validation separately.
+Publish version 0.2.5 artifacts, then physically validate menu single-click
+with protobuf's omitted event type, menu double-click plus confirmed/cancelled
+deletion, reader double-click back, host-confirmed long-press exit, and phone
+single-/double-tap behavior. Continue screen-sharing and selected-text system
+validation separately.

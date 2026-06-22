@@ -137,7 +137,8 @@ Reader input mapping:
 
 - Native inbox list scroll: move and remember the visible item selection.
 - R1 single-click: open the remembered list selection. Read typed SDK fields
-  and its raw `jsonData` fallback.
+  and its raw `jsonData` fallback. Treat an existing envelope with omitted
+  `eventType` as protobuf's zero-valued `CLICK_EVENT`.
 - R1 menu double-click on an inbox item: open delete confirmation. Single-click
   confirms there; double-click cancels.
 - Reader scroll up/down: previous/next page with opposite-boundary bounce

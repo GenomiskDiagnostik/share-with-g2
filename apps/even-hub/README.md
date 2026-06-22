@@ -43,6 +43,8 @@ This directory contains the Even Hub G2 app.
 - Native G2 list menu for visible item selection and opening. R1 selection is
   remembered from list scroll events, and a single click opens it whether the
   physical host reports normalized fields or only the SDK `jsonData` fallback.
+  Protobuf omits the zero-valued `CLICK_EVENT`, so an existing event envelope
+  with no `eventType` is intentionally normalized as a click.
   A 280 ms decision window prevents a preceding click from consuming a later
   double-click.
 - Reader scroll changes pages with boundary-bounce suppression; reader
@@ -63,7 +65,8 @@ This directory contains the Even Hub G2 app.
 - Explicit `?mode=snapshot` mode for the latest authenticated screen snapshot.
 - `?mode=snapshot&demo=1` mode for image-container/browser QA without Android.
 - Vitest coverage for API validation, native-menu paging, scroll gating,
-  pagination, navigation, rendering, screen snapshots, reachability, and locale.
+  protobuf-zero click normalization, tap arbitration, pagination, navigation,
+  rendering, screen snapshots, reachability, and locale.
 
 ## Commands
 
