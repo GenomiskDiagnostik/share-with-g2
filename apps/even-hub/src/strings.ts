@@ -48,6 +48,7 @@ export type AppStrings = {
   menuHelp: string
   menuPrevious: string
   menuNext: string
+  menuRetry: string
   previousItem: string
   nextItem: string
   previousPage: string
@@ -137,6 +138,7 @@ const strings: Record<SupportedLocale, AppStrings> = {
     menuHelp: 'Rul: vælg · Tryk: åbn · Dobbelttryk: luk',
     menuPrevious: 'Forrige liste',
     menuNext: 'Næste liste',
+    menuRetry: 'Indbakken er klar. Tryk for at åbne menuen.',
     previousItem: 'Forrige element',
     nextItem: 'Næste element',
     previousPage: 'Forrige side',
@@ -224,6 +226,7 @@ const strings: Record<SupportedLocale, AppStrings> = {
     menuHelp: 'Scroll: select · Click: open · Double-click: close',
     menuPrevious: 'Previous list',
     menuNext: 'Next list',
+    menuRetry: 'The inbox is ready. Click to open the menu.',
     previousItem: 'Previous item',
     nextItem: 'Next item',
     previousPage: 'Previous page',

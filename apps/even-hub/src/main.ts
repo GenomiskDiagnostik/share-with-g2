@@ -7,6 +7,7 @@ import {
   ListItemContainerProperty,
   OsEventTypeList,
   RebuildPageContainer,
+  StartUpPageCreateResult,
   TextContainerProperty,
   TextContainerUpgrade,
   waitForEvenAppBridge,
@@ -36,7 +37,7 @@ import {
 } from './inbox/inboxMenu'
 import { ReaderScrollGate } from './inbox/readerScrollGate'
 import { isReaderReturnEvent } from './inbox/readerGesture'
-import { shouldUseInboxMenuStartup } from './inbox/inboxStartup'
+import { rebuildWithRetry } from './inbox/rebuildWithRetry'
 import { DEMO_ITEMS, renderReader, type ReaderView } from './inbox/renderReader'
 import { renderSnapshot, type SnapshotState, type SnapshotView } from './snapshot/renderSnapshot'
 import { decodeBase64Image } from './snapshot/imageData'
@@ -55,6 +56,7 @@ const SNAPSHOT_IMAGE_CONTAINER_ID = 3
 const SNAPSHOT_IMAGE_CONTAINER_NAME = 'snapshotImage'
 const REFRESH_INTERVAL_MS = 10_000
 const SCREEN_SHARE_REFRESH_INTERVAL_MS = 500
+const MENU_REBUILD_SETTLE_MS = 600
 type MutationAction = 'delete-current' | 'clear'
 type GlassesMode = 'menu' | 'reader'
 
@@ -82,6 +84,7 @@ async function main() {
   let glassesMode: GlassesMode = 'menu'
   let glassesSurface: 'text' | 'menu' = 'text'
   let glassesRenderKey = ''
+  let menuRebuildNotBefore = 0
   let menuPageIndex = 0
   const scrollGate = new ReaderScrollGate()
 
@@ -95,7 +98,28 @@ async function main() {
       menuPageIndex = menu.pageIndex
       const key = `menu:${menu.entries.map(entry => entry.label).join('|')}`
       if (key === glassesRenderKey) return
-      await bridge.rebuildPageContainer(createInboxMenuContainer(menu, strings))
+      if (glassesSurface === 'text') {
+        await waitUntil(menuRebuildNotBefore)
+      }
+      const rebuilt = await rebuildWithRetry(() =>
+        bridge!.rebuildPageContainer(createInboxMenuContainer(menu, strings)),
+      )
+      if (!rebuilt) {
+        if (glassesSurface === 'text') {
+          const fallback = `Send to G2\n\n${strings.readerTitle}\n\n${strings.menuRetry}`
+          await bridge.textContainerUpgrade(
+            new TextContainerUpgrade({
+              containerID: CONTAINER_ID,
+              containerName: CONTAINER_NAME,
+              contentOffset: 0,
+              contentLength: fallback.length,
+              content: fallback,
+            }),
+          )
+          glassesRenderKey = `menu-fallback:${key}`
+        }
+        return
+      }
       glassesSurface = 'menu'
       glassesRenderKey = key
       return
@@ -232,6 +256,36 @@ async function main() {
     demoMode ? strings.demoMode : undefined,
   )
 
+  try {
+    bridge = await waitForEvenAppBridge()
+    const initialView = renderReader(state, locale)
+    const startupResult = await bridge.createStartUpPageContainer(
+      createReaderStartupContainer(initialView.glassText),
+    )
+    if (
+      StartUpPageCreateResult.normalize(startupResult) !==
+      StartUpPageCreateResult.success
+    ) {
+      throw new Error(`G2 startup container failed: ${startupResult}`)
+    }
+    menuRebuildNotBefore = Date.now() + MENU_REBUILD_SETTLE_MS
+    glassesSurface = 'text'
+    glassesRenderKey = `text:${initialView.glassText}`
+    bindBridgeActions(
+      bridge,
+      () => state,
+      () => glassesMode,
+      () => createInboxMenu(state, menuPageIndex, strings),
+      handleMenuEntry,
+      showMenu,
+      dispatch,
+      scrollGate,
+    )
+  } catch {
+    bridge = undefined
+    root.dataset.bridge = 'unavailable'
+  }
+
   let enablePeriodicRefresh = false
   if (demoMode) {
     await dispatch({ type: 'load', items: DEMO_ITEMS })
@@ -249,39 +303,6 @@ async function main() {
     } catch (error) {
       await dispatch({ type: 'fail', reason: classifyFailure(error) })
     }
-  }
-
-  try {
-    bridge = await waitForEvenAppBridge()
-    const initialView = renderReader(state, locale)
-    if (shouldUseInboxMenuStartup(state.status, glassesMode)) {
-      const menu = createInboxMenu(state, menuPageIndex, strings)
-      menuPageIndex = menu.pageIndex
-      await bridge.createStartUpPageContainer(
-        createInboxMenuStartupContainer(menu, strings),
-      )
-      glassesSurface = 'menu'
-      glassesRenderKey = `menu:${menu.entries.map(entry => entry.label).join('|')}`
-    } else {
-      await bridge.createStartUpPageContainer(
-        createReaderStartupContainer(initialView.glassText),
-      )
-      glassesSurface = 'text'
-      glassesRenderKey = `text:${initialView.glassText}`
-    }
-    bindBridgeActions(
-      bridge,
-      () => state,
-      () => glassesMode,
-      () => createInboxMenu(state, menuPageIndex, strings),
-      handleMenuEntry,
-      showMenu,
-      dispatch,
-      scrollGate,
-    )
-  } catch {
-    bridge = undefined
-    root.dataset.bridge = 'unavailable'
   }
 
   if (enablePeriodicRefresh) {
@@ -597,13 +618,6 @@ function createInboxMenuContainer(
   strings: ReturnType<typeof getStrings>,
 ): RebuildPageContainer {
   return new RebuildPageContainer(createInboxMenuLayout(menu, strings))
-}
-
-function createInboxMenuStartupContainer(
-  menu: InboxMenuPage,
-  strings: ReturnType<typeof getStrings>,
-): CreateStartUpPageContainer {
-  return new CreateStartUpPageContainer(createInboxMenuLayout(menu, strings))
 }
 
 function createInboxMenuLayout(
@@ -1099,6 +1113,14 @@ function bindBridgeActions(
     }
 
     if (getMode() === 'menu') {
+      const textType = event.textEvent?.eventType ?? null
+      if (
+        !event.listEvent &&
+        isReaderReturnEvent(textType ?? sysType)
+      ) {
+        void showMenu()
+        return
+      }
       const listType = event.listEvent?.eventType ?? sysType
       if (listType === OsEventTypeList.CLICK_EVENT && event.listEvent) {
         const entry = findInboxMenuEntry(
@@ -1162,6 +1184,12 @@ function openSnapshotMode(demoMode: boolean) {
 
 function openInboxMode(demoMode: boolean) {
   window.location.href = demoMode ? '?demo=1' : window.location.pathname
+}
+
+async function waitUntil(timestamp: number): Promise<void> {
+  const remaining = timestamp - Date.now()
+  if (remaining <= 0) return
+  await new Promise(resolve => globalThis.setTimeout(resolve, remaining))
 }
 
 function classifyFailure(

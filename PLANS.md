@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Ship Even Hub version 0.2.1 with direct native-menu startup and a reliable
-single-click path from an open reader back to the inbox menu.
+Ship Even Hub version 0.2.2 with immediate G2 startup plus a delayed, checked,
+and retryable transition to the native inbox menu.
 
 ## Current phase
 
@@ -175,6 +175,13 @@ Physical evidence for version 0.2.0:
 - Reader double-click is not a reliable physical return path to the inbox menu.
 - ADR-017 replaces both behaviors in version 0.2.1.
 
+Physical evidence for version 0.2.1:
+
+- Delaying the mandatory startup container until after local API loading leaves
+  the G2 surface blank.
+- ADR-018 restores immediate startup and adds bounded menu rebuild retries in
+  version 0.2.2.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -207,8 +214,8 @@ Deliverables:
 
 Automated status:
 
-- 52 Even Hub test cases cover API validation, WebSocket fallback, native-menu
-  startup and paging, reader return gestures, scroll gating, key storage, mutations,
+- 53 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+  rebuild recovery and paging, reader return gestures, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   rendering, screen snapshot state, reachability, and locale selection. The current
   sandbox permits TypeScript typechecking; GitHub Actions remains the
@@ -259,7 +266,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.1`.
+- Even Hub package version: `0.2.2`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
 - The local API is owned by a visible `dataSync` foreground service started
@@ -308,6 +315,7 @@ Exit criteria:
 
 ## Immediate next task
 
-Complete version 0.2.1 menu-startup artifacts, then physically validate that G2
-opens directly on the inbox menu and that a single reader click returns to it.
-Continue low-FPS screen-sharing and selected-text system validation separately.
+Complete version 0.2.2 startup-recovery artifacts, then physically validate that
+G2 first shows loading and automatically changes to the inbox menu without a
+phone action. Continue reader-return, screen-sharing, and selected-text system
+validation separately.
