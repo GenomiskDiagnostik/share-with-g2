@@ -230,7 +230,7 @@ Deliverables:
 
 Automated status:
 
-- 62 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+- 64 Even Hub test cases cover API validation, WebSocket fallback, native-menu
   rebuild recovery and paging, reader return gestures, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   R1 event normalization, refresh concurrency/recovery, rendering, screen
