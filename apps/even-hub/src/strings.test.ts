@@ -6,11 +6,12 @@ describe('Even Hub locale selection', () => {
     expect(resolveLocale(['da-DK', 'en-US'])).toBe('da')
     expect(getStrings('da').retry).toBe('Prøv igen')
     expect(getStrings('da').menuHelp).toContain('Tryk: åbn')
+    expect(getStrings('da').menuHelp).toContain('Dobbelttryk: slet')
   })
 
   it('uses English as the fallback for unsupported locales', () => {
     expect(resolveLocale(['de-DE'])).toBe('en')
     expect(getStrings('en').retry).toBe('Try again')
-    expect(getStrings('en').readerHelp).toContain('back to menu')
+    expect(getStrings('en').readerHelp).toContain('Double-click: back')
   })
 })

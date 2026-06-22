@@ -49,6 +49,7 @@ export type AppStrings = {
   menuPrevious: string
   menuNext: string
   menuRetry: string
+  glassesDeleteHelp: string
   previousItem: string
   nextItem: string
   previousPage: string
@@ -133,12 +134,13 @@ const strings: Record<SupportedLocale, AppStrings> = {
     settingsKeyCleared: 'Den gemte nøgle er ryddet.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · side ${page}/${pageCount}`,
-    readerHelp: 'Scroll: side · Tryk: tilbage til menu',
+    readerHelp: 'Rul: side · Dobbelttryk: tilbage',
     itemPickerTitle: 'Vælg element',
-    menuHelp: 'Rul: vælg · Tryk: åbn · Dobbelttryk: luk',
+    menuHelp: 'Rul: vælg · Tryk: åbn · Dobbelttryk: slet',
     menuPrevious: 'Forrige liste',
     menuNext: 'Næste liste',
     menuRetry: 'Indbakken er klar. Tryk for at åbne menuen.',
+    glassesDeleteHelp: 'Tryk: slet · Dobbelttryk: annuller',
     previousItem: 'Forrige element',
     nextItem: 'Næste element',
     previousPage: 'Forrige side',
@@ -221,12 +223,13 @@ const strings: Record<SupportedLocale, AppStrings> = {
     settingsKeyCleared: 'The saved key was cleared.',
     readerMeta: (item, itemCount, page, pageCount, type) =>
       `${item}/${itemCount} · ${type} · page ${page}/${pageCount}`,
-    readerHelp: 'Scroll: page · Click: back to menu',
+    readerHelp: 'Scroll: page · Double-click: back',
     itemPickerTitle: 'Choose item',
-    menuHelp: 'Scroll: select · Click: open · Double-click: close',
+    menuHelp: 'Scroll: select · Click: open · Double-click: delete',
     menuPrevious: 'Previous list',
     menuNext: 'Next list',
     menuRetry: 'The inbox is ready. Click to open the menu.',
+    glassesDeleteHelp: 'Click: delete · Double-click: cancel',
     previousItem: 'Previous item',
     nextItem: 'Next item',
     previousPage: 'Previous page',

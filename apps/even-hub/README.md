@@ -42,10 +42,17 @@ This directory contains the Even Hub G2 app.
 - Paragraph/word-aware pagination for long text.
 - Native G2 list menu for visible item selection and opening. R1 selection is
   remembered from list scroll events, and a single click opens it whether the
-  physical host reports the click as a list, text, or system event.
+  physical host reports normalized fields or only the SDK `jsonData` fallback.
+  A 280 ms decision window prevents a preceding click from consuming a later
+  double-click.
 - Reader scroll changes pages with boundary-bounce suppression; reader
-  single-click or double-click returns to the inbox menu. Double-click no
-  longer closes the app from the native menu.
+  double-click returns to the inbox menu. In the menu, single-click accepts the
+  selected entry and double-click on an inbox item opens a G2 delete
+  confirmation; single-click confirms and double-click cancels there. The
+  host-managed long press remains the confirmed app-exit path.
+- The phone item picker distinguishes a single tap from two taps before
+  rerendering: single tap selects, while double tap opens the existing visible
+  delete confirmation.
 - Inbox refresh is single-flight. A failed first connection retries after one
   and three seconds and then continues normal ten-second polling, so startup
   can recover without repeated phone-side refreshes.

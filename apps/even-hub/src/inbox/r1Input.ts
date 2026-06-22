@@ -1,7 +1,7 @@
 import { OsEventTypeList } from '@evenrealities/even_hub_sdk'
 
 type EventPart = {
-  eventType?: OsEventTypeList
+  eventType?: unknown
 }
 
 type ListEventPart = EventPart & {
@@ -13,6 +13,7 @@ export type R1Event = {
   listEvent?: ListEventPart
   textEvent?: EventPart
   sysEvent?: EventPart
+  jsonData?: Record<string, unknown>
 }
 
 export type R1InputKind =
@@ -50,7 +51,19 @@ export class R1InputTracker {
       listEvent?.eventType,
       event.textEvent?.eventType,
       event.sysEvent?.eventType,
-    ].filter((value): value is OsEventTypeList => value !== undefined)
+      ...findRawValues(event.jsonData, 'eventtype'),
+    ].map(value => OsEventTypeList.fromJson(value))
+      .filter((value): value is OsEventTypeList => value !== undefined)
+
+    const rawSelectedName = findRawValues(event.jsonData, 'currentselectitemname')
+      .find((value): value is string => typeof value === 'string' && value.length > 0)
+    const rawSelectedIndex = findRawValues(event.jsonData, 'currentselectitemindex')
+      .map(toIndex)
+      .find((value): value is number => value !== undefined)
+    if (rawSelectedName) this.selectedName = rawSelectedName
+    if (rawSelectedIndex !== undefined) {
+      this.selectedIndex = rawSelectedIndex
+    }
 
     return {
       kind: classifyEvent(eventTypes),
@@ -58,6 +71,35 @@ export class R1InputTracker {
       ...(this.selectedIndex === undefined ? {} : { selectedIndex: this.selectedIndex }),
     }
   }
+}
+
+function findRawValues(
+  value: unknown,
+  wantedKey: string,
+  depth = 0,
+): unknown[] {
+  if (!value || typeof value !== 'object' || depth > 3) return []
+  const values: unknown[] = []
+  for (const [key, child] of Object.entries(value)) {
+    if (normalizeKey(key) === wantedKey) values.push(child)
+    if (child && typeof child === 'object') {
+      values.push(...findRawValues(child, wantedKey, depth + 1))
+    }
+  }
+  return values
+}
+
+function normalizeKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function toIndex(value: unknown): number | undefined {
+  const number = typeof value === 'string' && value.trim()
+    ? Number(value)
+    : value
+  return typeof number === 'number' && Number.isInteger(number) && number >= 0
+    ? number
+    : undefined
 }
 
 function classifyEvent(eventTypes: readonly OsEventTypeList[]): R1InputKind {

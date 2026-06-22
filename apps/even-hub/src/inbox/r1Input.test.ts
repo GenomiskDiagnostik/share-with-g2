@@ -51,6 +51,36 @@ describe('R1 input tracker', () => {
     })).toEqual({ kind: 'double-click' })
   })
 
+  it('reads a raw SDK jsonData payload when normalized event fields are absent', () => {
+    const tracker = new R1InputTracker()
+
+    expect(tracker.handle({
+      jsonData: {
+        data: {
+          Event_Type: 'SCROLL_BOTTOM_EVENT',
+          CurrentSelect_ItemName: '3. [New] Raw payload',
+          CurrentSelect_ItemIndex: '3',
+        },
+      },
+    })).toEqual({
+      kind: 'scroll-bottom',
+      selectedName: '3. [New] Raw payload',
+      selectedIndex: 3,
+    })
+
+    expect(tracker.handle({
+      jsonData: { Event_Type: 0 },
+    })).toMatchObject({ kind: 'click', selectedIndex: 3 })
+  })
+
+  it('normalizes raw double-click and exit names', () => {
+    const tracker = new R1InputTracker()
+    expect(tracker.handle({ jsonData: { event_type: 'DOUBLE_CLICK' } }).kind)
+      .toBe('double-click')
+    expect(tracker.handle({ jsonData: { event_type: 'SYSTEM_EXIT_EVENT' } }).kind)
+      .toBe('exit')
+  })
+
   it('ignores an event without a supported input', () => {
     expect(new R1InputTracker().handle({})).toEqual({ kind: 'other' })
   })

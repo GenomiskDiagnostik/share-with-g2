@@ -36,6 +36,7 @@ import {
   type InboxMenuPage,
 } from './inbox/inboxMenu'
 import { ReaderScrollGate } from './inbox/readerScrollGate'
+import { ItemTapTracker } from './inbox/itemTapTracker'
 import { rebuildWithRetry } from './inbox/rebuildWithRetry'
 import { R1InputTracker } from './inbox/r1Input'
 import {
@@ -62,7 +63,7 @@ const REFRESH_INTERVAL_MS = 10_000
 const SCREEN_SHARE_REFRESH_INTERVAL_MS = 500
 const MENU_REBUILD_SETTLE_MS = 600
 type MutationAction = 'delete-current' | 'clear'
-type GlassesMode = 'menu' | 'reader'
+type GlassesMode = 'menu' | 'reader' | 'delete-confirmation'
 
 async function main() {
   const root = document.querySelector<HTMLElement>('#app')
@@ -98,6 +99,37 @@ async function main() {
     const view = renderReader(state, locale)
     renderWeb(root, state, view, strings, demoMode ? strings.demoMode : undefined)
     if (!bridge) return
+
+    if (glassesMode === 'delete-confirmation') {
+      const item = getCurrentItem(state)
+      if (!item) {
+        glassesMode = 'menu'
+        await render()
+        return
+      }
+      const title = item.title?.trim() || strings.untitled
+      const content = [
+        strings.mutationDeleteTitle,
+        strings.mutationDeleteBody(title),
+        strings.glassesDeleteHelp,
+      ].join('\n\n')
+      const key = `delete-confirmation:${item.id}`
+      if (key === glassesRenderKey) return
+      if (glassesSurface === 'text') {
+        await bridge.textContainerUpgrade(new TextContainerUpgrade({
+          containerID: CONTAINER_ID,
+          containerName: CONTAINER_NAME,
+          contentOffset: 0,
+          contentLength: content.length,
+          content,
+        }))
+      } else {
+        await bridge.rebuildPageContainer(createReaderContainer(content))
+      }
+      glassesSurface = 'text'
+      glassesRenderKey = key
+      return
+    }
 
     if (hasInboxMenuState(state) && glassesMode === 'menu') {
       const menu = createInboxMenu(state, menuPageIndex, strings)
@@ -203,6 +235,27 @@ async function main() {
     }
   }
 
+  const requestDeleteFromMenu = async (entry: InboxMenuEntry) => {
+    if (entry.kind !== 'item') return
+    glassesMode = 'delete-confirmation'
+    await dispatch({ type: 'select-item', index: entry.itemIndex })
+  }
+
+  const confirmDeleteFromGlasses = async () => {
+    glassesMode = 'menu'
+    const failure = await mutate('delete-current')
+    if (failure) {
+      if (failure === 'unauthorized') {
+        await dispatch({ type: 'fail', reason: failure })
+      } else {
+        setText(root, '#mutation-status', strings.mutationFailure)
+        await render()
+      }
+      return
+    }
+    await showMenu()
+  }
+
   const performRefresh = async (): Promise<RefreshOutcome> => {
     if (demoMode) {
       await dispatch({ type: 'refresh', items: DEMO_ITEMS })
@@ -298,7 +351,9 @@ async function main() {
       () => glassesSurface,
       () => createInboxMenu(state, menuPageIndex, strings),
       handleMenuEntry,
+      requestDeleteFromMenu,
       showMenu,
+      confirmDeleteFromGlasses,
       dispatch,
       scrollGate,
     )
@@ -852,13 +907,25 @@ function bindWebActions(
   updateCurrentRead: () => Promise<void>,
   selectItem: (index: number) => Promise<void>,
 ) {
+  const itemTapTracker = new ItemTapTracker(
+    index => void selectItem(index),
+    index => {
+      void selectItem(index).then(() => {
+        const item = getCurrentItem(getState())
+        if (!item) return
+        const title = item.title?.trim() || strings.untitled
+        openMutationConfirmation(root, strings, 'delete-current', title)
+      })
+    },
+  )
+
   root.addEventListener('click', event => {
     const selectedItem = (event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-select-item-index]',
     )
     if (selectedItem) {
       const index = Number(selectedItem.dataset.selectItemIndex)
-      if (Number.isInteger(index)) void selectItem(index)
+      if (Number.isInteger(index)) itemTapTracker.tap(index)
       return
     }
     const readToggle = (event.target as HTMLElement).closest<HTMLButtonElement>(
@@ -970,6 +1037,7 @@ function bindWebActions(
     if (!isNavigationAction(type)) return
     void dispatch({ type })
   })
+
 }
 
 function openMutationConfirmation(
@@ -1117,11 +1185,23 @@ function bindBridgeActions(
   getSurface: () => 'text' | 'menu',
   getMenu: () => InboxMenuPage,
   handleMenuEntry: (entry: InboxMenuEntry) => Promise<void>,
+  requestDelete: (entry: InboxMenuEntry) => Promise<void>,
   showMenu: () => Promise<void>,
+  confirmDelete: () => Promise<void>,
   dispatch: (action: ReaderAction) => Promise<void>,
   scrollGate: ReaderScrollGate,
 ) {
   const inputTracker = new R1InputTracker()
+  const menuTapTracker = new ItemTapTracker(
+    index => {
+      const entry = getMenu().entries[index]
+      if (entry) void handleMenuEntry(entry)
+    },
+    index => {
+      const entry = getMenu().entries[index]
+      if (entry) void requestDelete(entry)
+    },
+  )
   const unsubscribe = bridge.onEvenHubEvent(event => {
     const input = inputTracker.handle(event)
     if (input.kind === 'exit') {
@@ -1130,9 +1210,9 @@ function bindBridgeActions(
     }
 
     if (getMode() === 'menu') {
-      if (input.kind !== 'click') return
+      if (input.kind !== 'click' && input.kind !== 'double-click') return
       if (getSurface() === 'text') {
-        void showMenu()
+        if (input.kind === 'click') void showMenu()
         return
       }
       const menu = getMenu()
@@ -1141,11 +1221,27 @@ function bindBridgeActions(
         input.selectedName,
         input.selectedIndex,
       ) ?? menu.entries[0]
-      if (entry) void handleMenuEntry(entry)
+      if (!entry) return
+      const entryIndex = menu.entries.indexOf(entry)
+      if (entryIndex < 0) return
+      if (input.kind === 'click') {
+        menuTapTracker.tap(entryIndex)
+      } else {
+        menuTapTracker.doubleTapNow(entryIndex)
+      }
       return
     }
 
-    if (input.kind === 'click' || input.kind === 'double-click') {
+    if (getMode() === 'delete-confirmation') {
+      if (input.kind === 'click') {
+        void confirmDelete()
+      } else if (input.kind === 'double-click') {
+        void showMenu()
+      }
+      return
+    }
+
+    if (input.kind === 'double-click') {
       void showMenu()
       return
     }

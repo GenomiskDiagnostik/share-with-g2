@@ -136,11 +136,13 @@ GET /items
 Reader input mapping:
 
 - Native inbox list scroll: move and remember the visible item selection.
-- R1 single-click: open the remembered list selection regardless of whether
-  the physical host reports a list, text, or system event.
+- R1 single-click: open the remembered list selection. Read typed SDK fields
+  and its raw `jsonData` fallback.
+- R1 menu double-click on an inbox item: open delete confirmation. Single-click
+  confirms there; double-click cancels.
 - Reader scroll up/down: previous/next page with opposite-boundary bounce
   suppression and no update at the first/final page.
-- Reader single-click or double-click: return to the native inbox list.
+- Reader double-click: return to the native inbox list.
 - The phone WebView exposes a visible item picker plus previous/next page
   actions for browser QA.
 

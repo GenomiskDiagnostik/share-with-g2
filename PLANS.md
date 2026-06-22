@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Ship Even Hub version 0.2.3 with normalized R1 click handling and automatic
-recovery when the first local inbox request fails.
+Ship Even Hub version 0.2.4 with raw SDK event fallback plus consistent
+single-/double-click behavior on G2 and the Even Hub phone view.
 
 ## Current phase
 
@@ -194,6 +194,14 @@ Physical evidence for version 0.2.2:
 - Startup performs sequential `/health` and `/items` requests over separate
   short-lived WebSocket connections, adding avoidable latency.
 
+Physical evidence for version 0.2.3:
+
+- Native R1 list scrolling still works, but click and double-click do not
+  navigate. The host may expose those inputs only through SDK `jsonData`.
+- Phone item selection rerenders after the first tap, preventing a normal
+  browser `dblclick` from reaching the original button.
+- Long press continues to invoke the host-managed app-exit confirmation.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -227,10 +235,14 @@ Deliverables:
   Complete locally for version 0.2.3; physical validation pending.
 - Single-flight inbox refresh with 1/3-second startup retries and unconditional
   10-second recovery polling. Complete locally for version 0.2.3.
+- Raw `jsonData` R1 normalization and explicit accept/back/delete confirmation
+  state. Complete locally for version 0.2.4; physical validation pending.
+- Phone item tap arbitration: single tap selects, double tap opens the existing
+  delete confirmation. Complete locally for version 0.2.4.
 
 Automated status:
 
-- 64 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+- 70 Even Hub test cases cover API validation, WebSocket fallback, native-menu
   rebuild recovery and paging, reader return gestures, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   R1 event normalization, refresh concurrency/recovery, rendering, screen
@@ -283,7 +295,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.3`.
+- Even Hub package version: `0.2.4`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
 - The local API is owned by a visible `dataSync` foreground service started
@@ -302,9 +314,9 @@ Exit criteria:
   boundaries where possible.
 - G2 creates an immediate loading surface and rebuilds it as a native inbox
   list after loading. List scrolling remembers the selection, a single R1
-  click from any documented event source opens it, reader scrolling changes
-  pages, and reader single-click or double-click returns to the menu, as
-  documented in ADR-019.
+  click accepts it, menu double-click requests confirmed deletion, reader
+  scrolling changes pages, and reader double-click returns to the menu, as
+  documented in ADR-020.
 - Public links are stored immediately, then enriched in WorkManager without
   cookies; failures retain the original URL.
 - Link retrieval blocks local/private destinations, follows at most three
@@ -335,8 +347,7 @@ Exit criteria:
 
 ## Immediate next task
 
-Publish version 0.2.3 artifacts, then physically validate that R1 scroll plus
-single-click opens the selected menu entry, a reader single-click returns to
-the menu, and a temporarily unavailable Android service recovers without
-repeated phone-side refreshes. Continue screen-sharing and selected-text system
-validation separately.
+Publish version 0.2.4 artifacts, then physically validate menu single-click,
+menu double-click plus confirmed/cancelled deletion, reader double-click back,
+host-confirmed long-press exit, and phone single-/double-tap behavior. Continue
+screen-sharing and selected-text system validation separately.
