@@ -11,7 +11,7 @@ describe('menu rebuild retry', () => {
     expect(wait).not.toHaveBeenCalled()
   })
 
-  it('retries failed rebuilds with bounded delays', async () => {
+  it('retries failed rebuilds immediately without host-proxied timers', async () => {
     const rebuild = vi
       .fn<() => Promise<boolean>>()
       .mockResolvedValueOnce(false)
@@ -19,9 +19,9 @@ describe('menu rebuild retry', () => {
       .mockResolvedValueOnce(true)
     const wait = vi.fn(async () => undefined)
 
-    await expect(rebuildWithRetry(rebuild, [0, 400, 800], wait)).resolves.toBe(true)
+    await expect(rebuildWithRetry(rebuild, [0, 0, 0], wait)).resolves.toBe(true)
     expect(rebuild).toHaveBeenCalledTimes(3)
-    expect(wait.mock.calls).toEqual([[400], [800]])
+    expect(wait).not.toHaveBeenCalled()
   })
 
   it('returns false after all attempts fail', async () => {

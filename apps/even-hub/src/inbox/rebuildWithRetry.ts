@@ -1,4 +1,4 @@
-export const DEFAULT_REBUILD_DELAYS_MS = [0, 400, 800] as const
+export const DEFAULT_REBUILD_DELAYS_MS = [0, 0, 0] as const
 
 export async function rebuildWithRetry(
   rebuild: () => Promise<boolean>,

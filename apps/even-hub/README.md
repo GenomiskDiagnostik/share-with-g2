@@ -52,6 +52,8 @@ This directory contains the Even Hub G2 app.
   Native `listEvent` is routed before generic text/system gestures: click or an
   omitted zero-value type accepts its selected index, while explicit list
   scroll events remain entirely firmware-controlled.
+- Menu/text surface rebuilds retry immediately without delayed browser timers;
+  interactive transitions never wait on SDK-proxied `setTimeout` callbacks.
 - Reader scroll changes pages with boundary-bounce suppression; reader
   double-click returns to the inbox menu. In the menu, single-click accepts the
   selected entry and double-click on an inbox item opens a G2 delete

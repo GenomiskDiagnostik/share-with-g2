@@ -145,6 +145,8 @@ Reader input mapping:
 - In menu mode, route native `listEvent` before generic gestures. Accept click
   or omitted type using the selected name/index, and leave explicit list scroll
   events entirely to firmware.
+- Rebuild menu/text surfaces immediately after bridge results. Never place an
+  interactive transition behind an SDK-proxied browser timer.
 - Normalize raw `{ type, jsonData }` bridge callbacks through the official SDK
   parser before applying gesture rules. Show only count, kind, and typed/raw
   source in phone diagnostics.

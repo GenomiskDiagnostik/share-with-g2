@@ -62,7 +62,6 @@ const SNAPSHOT_IMAGE_CONTAINER_ID = 3
 const SNAPSHOT_IMAGE_CONTAINER_NAME = 'snapshotImage'
 const REFRESH_INTERVAL_MS = 10_000
 const SCREEN_SHARE_REFRESH_INTERVAL_MS = 500
-const MENU_REBUILD_SETTLE_MS = 600
 type MutationAction = 'delete-current' | 'clear'
 type GlassesMode = 'menu' | 'reader' | 'delete-confirmation'
 
@@ -90,7 +89,6 @@ async function main() {
   let glassesMode: GlassesMode = 'menu'
   let glassesSurface: 'text' | 'menu' = 'text'
   let glassesRenderKey = ''
-  let menuRebuildNotBefore = 0
   let menuPageIndex = 0
   let bridgeEventCount = 0
   let refreshCoordinator: RefreshCoordinator | undefined
@@ -149,9 +147,6 @@ async function main() {
       menuPageIndex = menu.pageIndex
       const key = `menu:${menu.entries.map(entry => entry.label).join('|')}`
       if (key === glassesRenderKey) return
-      if (glassesSurface === 'text') {
-        await waitUntil(menuRebuildNotBefore)
-      }
       const rebuilt = await rebuildWithRetry(() =>
         bridge!.rebuildPageContainer(createInboxMenuContainer(menu, strings)),
       )
@@ -354,7 +349,6 @@ async function main() {
     ) {
       throw new Error(`G2 startup container failed: ${startupResult}`)
     }
-    menuRebuildNotBefore = Date.now() + MENU_REBUILD_SETTLE_MS
     glassesSurface = 'text'
     glassesRenderKey = `text:${initialView.glassText}`
     bindBridgeActions(
@@ -1327,12 +1321,6 @@ function openSnapshotMode(demoMode: boolean) {
 
 function openInboxMode(demoMode: boolean) {
   window.location.href = demoMode ? '?demo=1' : window.location.pathname
-}
-
-async function waitUntil(timestamp: number): Promise<void> {
-  const remaining = timestamp - Date.now()
-  if (remaining <= 0) return
-  await new Promise(resolve => globalThis.setTimeout(resolve, remaining))
 }
 
 function classifyFailure(

@@ -2,8 +2,7 @@
 
 ## Current objective
 
-Ship Even Hub version 0.2.8 with native-list-first event routing based on
-working open-source Even Hub implementations.
+Ship Even Hub version 0.2.9 with timer-free surface rebuilds after native input.
 
 ## Current phase
 
@@ -232,6 +231,13 @@ Physical evidence for version 0.2.7:
 - Working projects route `listEvent` directly before generic text/system
   gestures and leave explicit native-list scroll to firmware.
 
+Physical evidence for version 0.2.8:
+
+- Navigation still fails, while double-click may react with roughly 30 seconds
+  of lag after the phone opens an item.
+- Input dispatch is immediate, but failed list/text surface rebuilds still wait
+  on SDK-proxied 400/800 ms timers, and startup retains a proxied 600 ms timer.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -280,6 +286,8 @@ Deliverables:
 - Native-list-first accept/double routing with explicit scroll pass-through and
   serialized actions. Complete locally for version 0.2.8; physical validation
   pending.
+- Timer-free startup and interactive surface rebuild retries. Complete locally
+  for version 0.2.9; physical validation pending.
 
 Automated status:
 
@@ -336,7 +344,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.8`.
+- Even Hub package version: `0.2.9`.
 - Even Hub SDK and minimum package SDK version: `0.0.11`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
@@ -389,7 +397,7 @@ Exit criteria:
 
 ## Immediate next task
 
-Publish version 0.2.8 artifacts, then physically validate native-list
-single-click acceptance, double-click action, unchanged real-time scrolling,
-and the content-free diagnostic line. Continue screen-sharing and selected-text
-system validation separately.
+Publish version 0.2.9 artifacts, then physically validate native-list
+single-click acceptance, double-click return latency after phone-side item
+opening, unchanged real-time scrolling, and the content-free diagnostic line.
+Continue screen-sharing and selected-text system validation separately.
