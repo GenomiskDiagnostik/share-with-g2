@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeBridgeEvent } from './bridgeEvent'
+import { OsEventTypeList } from '@evenrealities/even_hub_sdk'
+import { nativeListAction, normalizeBridgeEvent } from './bridgeEvent'
 import { R1InputTracker } from './r1Input'
 
 describe('bridge event normalization', () => {
@@ -33,5 +34,24 @@ describe('bridge event normalization', () => {
       selectedIndex: 2,
     })
     expect(new R1InputTracker().handle(doubleClick.event).kind).toBe('double-click')
+  })
+
+  it('routes native list accept before generic gesture handling', () => {
+    expect(nativeListAction({ currentSelectItemIndex: 2 })).toBe('accept')
+    expect(nativeListAction({
+      eventType: OsEventTypeList.CLICK_EVENT,
+      currentSelectItemIndex: 2,
+    })).toBe('accept')
+    expect(nativeListAction({
+      eventType: OsEventTypeList.DOUBLE_CLICK_EVENT,
+      currentSelectItemIndex: 2,
+    })).toBe('double-click')
+  })
+
+  it('leaves native list scroll entirely to firmware', () => {
+    expect(nativeListAction({ eventType: OsEventTypeList.SCROLL_TOP_EVENT }))
+      .toBeUndefined()
+    expect(nativeListAction({ eventType: OsEventTypeList.SCROLL_BOTTOM_EVENT }))
+      .toBeUndefined()
   })
 })

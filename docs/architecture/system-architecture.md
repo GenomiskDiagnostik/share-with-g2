@@ -142,6 +142,9 @@ Reader input mapping:
 - Execute classified R1 click and double-click actions synchronously without
   browser timers; the SDK runtime proxies global timers and they are unsuitable
   for interaction latency.
+- In menu mode, route native `listEvent` before generic gestures. Accept click
+  or omitted type using the selected name/index, and leave explicit list scroll
+  events entirely to firmware.
 - Normalize raw `{ type, jsonData }` bridge callbacks through the official SDK
   parser before applying gesture rules. Show only count, kind, and typed/raw
   source in phone diagnostics.

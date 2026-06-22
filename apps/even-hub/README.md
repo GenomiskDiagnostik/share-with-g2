@@ -49,6 +49,9 @@ This directory contains the Even Hub G2 app.
   normalized through the official SDK parser.
   Host-classified click and double-click events execute immediately without a
   WebView timer.
+  Native `listEvent` is routed before generic text/system gestures: click or an
+  omitted zero-value type accepts its selected index, while explicit list
+  scroll events remain entirely firmware-controlled.
 - Reader scroll changes pages with boundary-bounce suppression; reader
   double-click returns to the inbox menu. In the menu, single-click accepts the
   selected entry and double-click on an inbox item opens a G2 delete

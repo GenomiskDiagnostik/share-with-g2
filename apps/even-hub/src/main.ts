@@ -37,7 +37,7 @@ import {
 } from './inbox/inboxMenu'
 import { ReaderScrollGate } from './inbox/readerScrollGate'
 import { ItemTapTracker } from './inbox/itemTapTracker'
-import { normalizeBridgeEvent } from './inbox/bridgeEvent'
+import { nativeListAction, normalizeBridgeEvent } from './inbox/bridgeEvent'
 import { rebuildWithRetry } from './inbox/rebuildWithRetry'
 import { R1InputTracker } from './inbox/r1Input'
 import {
@@ -1213,12 +1213,42 @@ function bindBridgeActions(
   scrollGate: ReaderScrollGate,
 ) {
   const inputTracker = new R1InputTracker()
+  let bridgeActionBusy = false
+  const runBridgeAction = async (action: () => Promise<void>) => {
+    if (bridgeActionBusy) return
+    bridgeActionBusy = true
+    try {
+      await action()
+    } finally {
+      bridgeActionBusy = false
+    }
+  }
   const unsubscribe = bridge.onEvenHubEvent(event => {
     const normalized = normalizeBridgeEvent(event)
     const input = inputTracker.handle(normalized.event)
     reportInput(input.kind, normalized.source)
     if (input.kind === 'exit') {
       unsubscribe()
+      return
+    }
+
+    const listAction = nativeListAction(normalized.event.listEvent)
+    if (getMode() === 'menu' && listAction) {
+      if (getSurface() === 'text') {
+        if (listAction === 'accept') void runBridgeAction(showMenu)
+        return
+      }
+      const menu = getMenu()
+      const listEvent = normalized.event.listEvent
+      const entry = findInboxMenuEntry(
+        menu,
+        listEvent?.currentSelectItemName,
+        listEvent?.currentSelectItemIndex,
+      ) ?? menu.entries[0]
+      if (!entry) return
+      void runBridgeAction(() => listAction === 'accept'
+        ? handleMenuEntry(entry)
+        : requestDelete(entry))
       return
     }
 
@@ -1236,24 +1266,24 @@ function bindBridgeActions(
       ) ?? menu.entries[0]
       if (!entry) return
       if (input.kind === 'click') {
-        void handleMenuEntry(entry)
+        void runBridgeAction(() => handleMenuEntry(entry))
       } else {
-        void requestDelete(entry)
+        void runBridgeAction(() => requestDelete(entry))
       }
       return
     }
 
     if (getMode() === 'delete-confirmation') {
       if (input.kind === 'click') {
-        void confirmDelete()
+        void runBridgeAction(confirmDelete)
       } else if (input.kind === 'double-click') {
-        void showMenu()
+        void runBridgeAction(showMenu)
       }
       return
     }
 
     if (input.kind === 'double-click') {
-      void showMenu()
+      void runBridgeAction(showMenu)
       return
     }
     if (input.kind !== 'scroll-top' && input.kind !== 'scroll-bottom') return
