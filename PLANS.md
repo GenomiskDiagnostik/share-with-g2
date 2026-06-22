@@ -2,8 +2,7 @@
 
 ## Current objective
 
-Ship Even Hub version 0.2.6 with raw bridge-envelope normalization and
-content-free physical R1 input diagnostics.
+Ship Even Hub version 0.2.7 with timer-free R1 and phone input navigation.
 
 ## Current phase
 
@@ -218,6 +217,14 @@ Physical evidence for version 0.2.5:
 - The installed app has no visible counter proving whether JavaScript receives
   the event, requiring bounded diagnostics in version 0.2.6.
 
+Physical evidence for version 0.2.6:
+
+- Click can eventually execute after approximately 30 seconds and remains
+  unreliable, while native scroll responds in real time.
+- The 280 ms menu-click deferral uses `window.setTimeout`, which the Even Hub
+  SDK proxies through the host lifecycle and therefore cannot provide reliable
+  physical input latency.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -261,6 +268,8 @@ Deliverables:
 - Raw bridge-envelope parsing through the official SDK plus content-free phone
   input diagnostics. Complete locally for version 0.2.6; physical validation
   pending.
+- Timer-free R1 actions and timestamp-only phone double-tap detection. Complete
+  locally for version 0.2.7; physical validation pending.
 
 Automated status:
 
@@ -317,7 +326,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.6`.
+- Even Hub package version: `0.2.7`.
 - Even Hub SDK and minimum package SDK version: `0.0.11`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
@@ -370,8 +379,6 @@ Exit criteria:
 
 ## Immediate next task
 
-Publish version 0.2.6 artifacts, then physically validate whether the phone
-diagnostic counter changes for R1 scroll, single-click, and double-click. If it
-does, verify accept/back/delete routing; if it remains absent, record that as a
-host event-delivery failure. Continue screen-sharing and selected-text system
-validation separately.
+Publish version 0.2.7 artifacts, then physically compare R1 click/double-click
+action latency with native scrolling and record the content-free diagnostic
+line. Continue screen-sharing and selected-text system validation separately.

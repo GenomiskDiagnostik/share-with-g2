@@ -47,16 +47,16 @@ This directory contains the Even Hub G2 app.
   with no `eventType` is intentionally normalized as a click.
   Both typed callbacks and raw `{ type, jsonData }` callback envelopes are
   normalized through the official SDK parser.
-  A 280 ms decision window prevents a preceding click from consuming a later
-  double-click.
+  Host-classified click and double-click events execute immediately without a
+  WebView timer.
 - Reader scroll changes pages with boundary-bounce suppression; reader
   double-click returns to the inbox menu. In the menu, single-click accepts the
   selected entry and double-click on an inbox item opens a G2 delete
   confirmation; single-click confirms and double-click cancels there. The
   host-managed long press remains the confirmed app-exit path.
-- The phone item picker distinguishes a single tap from two taps before
-  rerendering: single tap selects, while double tap opens the existing visible
-  delete confirmation.
+- The phone item picker selects immediately. A second tap on the same item
+  within 350 ms is recognized from timestamps, without scheduling a timer, and
+  opens the existing visible delete confirmation.
 - The phone view shows a content-free R1 diagnostic after the first bridge
   event: event count, normalized kind, and typed/raw source only.
 - Inbox refresh is single-flight. A failed first connection retries after one

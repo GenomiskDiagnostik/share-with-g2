@@ -2,60 +2,45 @@ import { describe, expect, it, vi } from 'vitest'
 import { ItemTapTracker } from './itemTapTracker'
 
 describe('item tap tracker', () => {
-  it('accepts an item after the double-tap window expires', () => {
+  it('accepts an item immediately without scheduling a timer', () => {
     const singleTap = vi.fn()
-    const scheduled: Array<() => void> = []
-    const tracker = new ItemTapTracker(
-      singleTap,
-      vi.fn(),
-      callback => {
-        scheduled.push(callback)
-        return 1
-      },
-    )
+    const tracker = new ItemTapTracker(singleTap, vi.fn())
 
-    tracker.tap(2)
-    expect(singleTap).not.toHaveBeenCalled()
-    scheduled[0]?.()
+    tracker.tap(2, 1_000)
     expect(singleTap).toHaveBeenCalledWith(2)
   })
 
-  it('maps two taps on the same item to delete instead of accept', () => {
+  it('maps a second timestamped tap on the same item to delete', () => {
     const singleTap = vi.fn()
     const doubleTap = vi.fn()
-    const cancel = vi.fn()
-    const tracker = new ItemTapTracker(singleTap, doubleTap, () => 7, cancel)
+    const tracker = new ItemTapTracker(singleTap, doubleTap)
 
-    tracker.tap(1)
-    tracker.tap(1)
+    tracker.tap(1, 1_000)
+    tracker.tap(1, 1_300)
 
-    expect(cancel).toHaveBeenCalledWith(7)
-    expect(singleTap).not.toHaveBeenCalled()
+    expect(singleTap).toHaveBeenCalledOnce()
     expect(doubleTap).toHaveBeenCalledWith(1)
   })
 
   it('starts a new gesture when the second tap targets another item', () => {
     const doubleTap = vi.fn()
-    const cancel = vi.fn()
-    const tracker = new ItemTapTracker(vi.fn(), doubleTap, () => 4, cancel)
+    const singleTap = vi.fn()
+    const tracker = new ItemTapTracker(singleTap, doubleTap)
 
-    tracker.tap(0)
-    tracker.tap(1)
+    tracker.tap(0, 1_000)
+    tracker.tap(1, 1_200)
 
-    expect(cancel).toHaveBeenCalledWith(4)
+    expect(singleTap).toHaveBeenCalledTimes(2)
     expect(doubleTap).not.toHaveBeenCalled()
   })
 
-  it('accepts an explicit host double-click and cancels a pending click', () => {
+  it('accepts an explicit host double-click without a timer', () => {
     const singleTap = vi.fn()
     const doubleTap = vi.fn()
-    const cancel = vi.fn()
-    const tracker = new ItemTapTracker(singleTap, doubleTap, () => 9, cancel)
+    const tracker = new ItemTapTracker(singleTap, doubleTap)
 
-    tracker.tap(3)
     tracker.doubleTapNow(3)
 
-    expect(cancel).toHaveBeenCalledWith(9)
     expect(singleTap).not.toHaveBeenCalled()
     expect(doubleTap).toHaveBeenCalledWith(3)
   })

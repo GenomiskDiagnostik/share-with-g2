@@ -1213,16 +1213,6 @@ function bindBridgeActions(
   scrollGate: ReaderScrollGate,
 ) {
   const inputTracker = new R1InputTracker()
-  const menuTapTracker = new ItemTapTracker(
-    index => {
-      const entry = getMenu().entries[index]
-      if (entry) void handleMenuEntry(entry)
-    },
-    index => {
-      const entry = getMenu().entries[index]
-      if (entry) void requestDelete(entry)
-    },
-  )
   const unsubscribe = bridge.onEvenHubEvent(event => {
     const normalized = normalizeBridgeEvent(event)
     const input = inputTracker.handle(normalized.event)
@@ -1245,12 +1235,10 @@ function bindBridgeActions(
         input.selectedIndex,
       ) ?? menu.entries[0]
       if (!entry) return
-      const entryIndex = menu.entries.indexOf(entry)
-      if (entryIndex < 0) return
       if (input.kind === 'click') {
-        menuTapTracker.tap(entryIndex)
+        void handleMenuEntry(entry)
       } else {
-        menuTapTracker.doubleTapNow(entryIndex)
+        void requestDelete(entry)
       }
       return
     }

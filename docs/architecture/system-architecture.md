@@ -139,6 +139,9 @@ Reader input mapping:
 - R1 single-click: open the remembered list selection. Read typed SDK fields
   and its raw `jsonData` fallback. Treat an existing envelope with omitted
   `eventType` as protobuf's zero-valued `CLICK_EVENT`.
+- Execute classified R1 click and double-click actions synchronously without
+  browser timers; the SDK runtime proxies global timers and they are unsuitable
+  for interaction latency.
 - Normalize raw `{ type, jsonData }` bridge callbacks through the official SDK
   parser before applying gesture rules. Show only count, kind, and typed/raw
   source in phone diagnostics.

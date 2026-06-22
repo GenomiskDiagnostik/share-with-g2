@@ -1,41 +1,37 @@
-type Schedule = (callback: () => void, delayMs: number) => number
-type Cancel = (timer: number) => void
-
 export class ItemTapTracker {
-  private timer: number | undefined
-  private index: number | undefined
+  private previousIndex: number | undefined
+  private previousTapAt = 0
 
   constructor(
     private readonly onSingleTap: (index: number) => void,
     private readonly onDoubleTap: (index: number) => void,
-    private readonly schedule: Schedule = (callback, delayMs) =>
-      window.setTimeout(callback, delayMs),
-    private readonly cancel: Cancel = timer => window.clearTimeout(timer),
-    private readonly doubleTapMs = 280,
+    private readonly doubleTapMs = 350,
+    private readonly now: () => number = Date.now,
   ) {}
 
-  tap(index: number): void {
-    if (this.timer !== undefined && this.index === index) {
-      this.doubleTapNow(index)
+  tap(index: number, at = this.now()): void {
+    if (
+      this.previousIndex === index &&
+      at >= this.previousTapAt &&
+      at - this.previousTapAt <= this.doubleTapMs
+    ) {
+      this.clearPrevious()
+      this.onDoubleTap(index)
       return
     }
 
-    if (this.timer !== undefined) this.cancel(this.timer)
-    this.index = index
-    this.timer = this.schedule(() => {
-      this.clearPending()
-      this.onSingleTap(index)
-    }, this.doubleTapMs)
+    this.previousIndex = index
+    this.previousTapAt = at
+    this.onSingleTap(index)
   }
 
   doubleTapNow(index: number): void {
-    if (this.timer !== undefined) this.cancel(this.timer)
-    this.clearPending()
+    this.clearPrevious()
     this.onDoubleTap(index)
   }
 
-  private clearPending(): void {
-    this.timer = undefined
-    this.index = undefined
+  private clearPrevious(): void {
+    this.previousIndex = undefined
+    this.previousTapAt = 0
   }
 }
