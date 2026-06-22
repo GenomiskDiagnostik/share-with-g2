@@ -50,6 +50,7 @@ export type AppStrings = {
   menuNext: string
   menuRetry: string
   glassesDeleteHelp: string
+  inputDiagnostics: (count: number, kind: string, source: string) => string
   previousItem: string
   nextItem: string
   previousPage: string
@@ -141,6 +142,8 @@ const strings: Record<SupportedLocale, AppStrings> = {
     menuNext: 'Næste liste',
     menuRetry: 'Indbakken er klar. Tryk for at åbne menuen.',
     glassesDeleteHelp: 'Tryk: slet · Dobbelttryk: annuller',
+    inputDiagnostics: (count, kind, source) =>
+      `R1-events: ${count} · seneste: ${kind} (${source})`,
     previousItem: 'Forrige element',
     nextItem: 'Næste element',
     previousPage: 'Forrige side',
@@ -230,6 +233,8 @@ const strings: Record<SupportedLocale, AppStrings> = {
     menuNext: 'Next list',
     menuRetry: 'The inbox is ready. Click to open the menu.',
     glassesDeleteHelp: 'Click: delete · Double-click: cancel',
+    inputDiagnostics: (count, kind, source) =>
+      `R1 events: ${count} · latest: ${kind} (${source})`,
     previousItem: 'Previous item',
     nextItem: 'Next item',
     previousPage: 'Previous page',

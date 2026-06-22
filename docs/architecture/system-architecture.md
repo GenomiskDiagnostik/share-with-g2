@@ -139,6 +139,9 @@ Reader input mapping:
 - R1 single-click: open the remembered list selection. Read typed SDK fields
   and its raw `jsonData` fallback. Treat an existing envelope with omitted
   `eventType` as protobuf's zero-valued `CLICK_EVENT`.
+- Normalize raw `{ type, jsonData }` bridge callbacks through the official SDK
+  parser before applying gesture rules. Show only count, kind, and typed/raw
+  source in phone diagnostics.
 - R1 menu double-click on an inbox item: open delete confirmation. Single-click
   confirms there; double-click cancels.
 - Reader scroll up/down: previous/next page with opposite-boundary bounce

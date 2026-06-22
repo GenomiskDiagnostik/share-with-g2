@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Ship Even Hub version 0.2.5 with official SDK 0.0.11 and correct decoding of
-protobuf's omitted zero-valued `CLICK_EVENT`.
+Ship Even Hub version 0.2.6 with raw bridge-envelope normalization and
+content-free physical R1 input diagnostics.
 
 ## Current phase
 
@@ -210,6 +210,14 @@ Physical evidence for version 0.2.4:
 - Official Even Hub templates explicitly require an existing event envelope
   with missing `eventType` to be interpreted as click.
 
+Physical evidence for version 0.2.5:
+
+- R1 click and double-click still do not navigate after protobuf-zero
+  decoding, so the callback may be arriving as a raw `{ type, jsonData }`
+  envelope rather than typed event properties.
+- The installed app has no visible counter proving whether JavaScript receives
+  the event, requiring bounded diagnostics in version 0.2.6.
+
 ### M3 - Even Hub Shared Inbox vertical slice
 
 Status: active
@@ -250,10 +258,13 @@ Deliverables:
 - Official Even Hub SDK 0.0.11 and protobuf-zero click decoding for list, text,
   and system envelopes. Complete locally for version 0.2.5; physical validation
   pending.
+- Raw bridge-envelope parsing through the official SDK plus content-free phone
+  input diagnostics. Complete locally for version 0.2.6; physical validation
+  pending.
 
 Automated status:
 
-- 74 Even Hub test cases cover API validation, WebSocket fallback, native-menu
+- 77 Even Hub test cases cover API validation, WebSocket fallback, native-menu
   rebuild recovery and paging, reader return gestures, scroll gating, key storage, mutations,
   read-state updates, refresh reconciliation, pagination, navigation,
   R1 event normalization, refresh concurrency/recovery, rendering, screen
@@ -306,7 +317,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.5`.
+- Even Hub package version: `0.2.6`.
 - Even Hub SDK and minimum package SDK version: `0.0.11`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
@@ -359,8 +370,8 @@ Exit criteria:
 
 ## Immediate next task
 
-Publish version 0.2.5 artifacts, then physically validate menu single-click
-with protobuf's omitted event type, menu double-click plus confirmed/cancelled
-deletion, reader double-click back, host-confirmed long-press exit, and phone
-single-/double-tap behavior. Continue screen-sharing and selected-text system
+Publish version 0.2.6 artifacts, then physically validate whether the phone
+diagnostic counter changes for R1 scroll, single-click, and double-click. If it
+does, verify accept/back/delete routing; if it remains absent, record that as a
+host event-delivery failure. Continue screen-sharing and selected-text system
 validation separately.

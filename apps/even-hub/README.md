@@ -45,6 +45,8 @@ This directory contains the Even Hub G2 app.
   physical host reports normalized fields or only the SDK `jsonData` fallback.
   Protobuf omits the zero-valued `CLICK_EVENT`, so an existing event envelope
   with no `eventType` is intentionally normalized as a click.
+  Both typed callbacks and raw `{ type, jsonData }` callback envelopes are
+  normalized through the official SDK parser.
   A 280 ms decision window prevents a preceding click from consuming a later
   double-click.
 - Reader scroll changes pages with boundary-bounce suppression; reader
@@ -55,6 +57,8 @@ This directory contains the Even Hub G2 app.
 - The phone item picker distinguishes a single tap from two taps before
   rerendering: single tap selects, while double tap opens the existing visible
   delete confirmation.
+- The phone view shows a content-free R1 diagnostic after the first bridge
+  event: event count, normalized kind, and typed/raw source only.
 - Inbox refresh is single-flight. A failed first connection retries after one
   and three seconds and then continues normal ten-second polling, so startup
   can recover without repeated phone-side refreshes.

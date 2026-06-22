@@ -37,6 +37,7 @@ import {
 } from './inbox/inboxMenu'
 import { ReaderScrollGate } from './inbox/readerScrollGate'
 import { ItemTapTracker } from './inbox/itemTapTracker'
+import { normalizeBridgeEvent } from './inbox/bridgeEvent'
 import { rebuildWithRetry } from './inbox/rebuildWithRetry'
 import { R1InputTracker } from './inbox/r1Input'
 import {
@@ -91,9 +92,21 @@ async function main() {
   let glassesRenderKey = ''
   let menuRebuildNotBefore = 0
   let menuPageIndex = 0
+  let bridgeEventCount = 0
   let refreshCoordinator: RefreshCoordinator | undefined
   let hasLoadedItems = false
   const scrollGate = new ReaderScrollGate()
+
+  const reportBridgeInput = (kind: string, source: string) => {
+    bridgeEventCount += 1
+    const value = strings.inputDiagnostics(bridgeEventCount, kind, source)
+    root.dataset.inputDiagnostics = value
+    const diagnostics = root.querySelector<HTMLElement>('#input-diagnostics')
+    if (diagnostics) {
+      diagnostics.hidden = false
+      diagnostics.textContent = value
+    }
+  }
 
   const render = async () => {
     const view = renderReader(state, locale)
@@ -354,6 +367,7 @@ async function main() {
       requestDeleteFromMenu,
       showMenu,
       confirmDeleteFromGlasses,
+      reportBridgeInput,
       dispatch,
       scrollGate,
     )
@@ -802,6 +816,7 @@ function renderWeb(
       <h1 id="reader-heading"></h1>
       <div class="reader-body" id="reader-body"></div>
       <p class="reader-help" id="reader-help"></p>
+      <p class="reader-help" id="input-diagnostics" hidden></p>
       <p class="mutation-status" id="mutation-status" role="status"></p>
       <div class="reader-actions">
         <button type="button" data-action="previous-page" id="previous-page"></button>
@@ -834,6 +849,11 @@ function renderWeb(
   setText(root, '#reader-heading', view.heading)
   setText(root, '#reader-body', view.body)
   setText(root, '#reader-help', view.help)
+  const inputDiagnostics = root.querySelector<HTMLElement>('#input-diagnostics')
+  if (inputDiagnostics && root.dataset.inputDiagnostics) {
+    inputDiagnostics.hidden = false
+    inputDiagnostics.textContent = root.dataset.inputDiagnostics
+  }
   setText(root, '#previous-page', strings.previousPage)
   setText(root, '#next-page', strings.nextPage)
   setText(root, '#refresh-items', strings.refresh)
@@ -1188,6 +1208,7 @@ function bindBridgeActions(
   requestDelete: (entry: InboxMenuEntry) => Promise<void>,
   showMenu: () => Promise<void>,
   confirmDelete: () => Promise<void>,
+  reportInput: (kind: string, source: string) => void,
   dispatch: (action: ReaderAction) => Promise<void>,
   scrollGate: ReaderScrollGate,
 ) {
@@ -1203,7 +1224,9 @@ function bindBridgeActions(
     },
   )
   const unsubscribe = bridge.onEvenHubEvent(event => {
-    const input = inputTracker.handle(event)
+    const normalized = normalizeBridgeEvent(event)
+    const input = inputTracker.handle(normalized.event)
+    reportInput(input.kind, normalized.source)
     if (input.kind === 'exit') {
       unsubscribe()
       return
