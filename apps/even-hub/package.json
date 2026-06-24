@@ -1,15 +1,15 @@
 {
   "name": "send-to-g2-even-hub",
-  "version": "0.2.9",
+  "version": "0.2.29",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && node scripts/prepare-prebuilt.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "pack": "evenhub pack app.json dist -o send-to-g2.ehpk"
+    "pack": "node scripts/prepare-prebuilt.mjs && evenhub pack app.json dist -o send-to-g2.ehpk"
   },
   "dependencies": {
     "@evenrealities/even_hub_sdk": "0.0.11"

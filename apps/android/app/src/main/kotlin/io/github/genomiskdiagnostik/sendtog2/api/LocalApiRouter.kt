@@ -195,7 +195,7 @@ class LocalApiRouter(
     )
 
     companion object {
-        const val API_VERSION = "0.2.0"
+        const val API_VERSION = "0.2.1"
         private const val ITEM_PATH_PREFIX = "/items/"
         private val SUPPORTED_METHODS = setOf("GET", "PATCH", "DELETE")
     }

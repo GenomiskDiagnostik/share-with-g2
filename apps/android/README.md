@@ -16,6 +16,7 @@ one user-approved screen snapshot for Even Hub snapshot mode.
 - Kotlin: 2.3.21
 - Compose BOM: 2026.05.01
 - Room: 2.8.4 with KSP
+- Current APK version: `0.2.1` (`versionCode` 5)
 
 The versions are intentionally pinned to the latest compatible Android 16
 toolchain. Newer AndroidX Core and AGP releases require API 37 and are not part
@@ -37,6 +38,9 @@ app/build/outputs/apk/debug/app-debug.apk
 ```
 
 GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
+Tagged GitHub Releases attach the installable Android debug APK for physical
+validation. The current launcher icon is generated from the supplied G2 logo in
+the `mipmap-*` resource folders.
 
 ## Implemented slice
 
@@ -69,6 +73,7 @@ GitHub Actions also uploads debug APKs and build reports as workflow artifacts.
 - Latest screen snapshot exposed through authenticated `GET /screen-snapshot`.
 - Screen snapshots are scaled to `288 × 144` and kept in memory only.
 - Router-fake plus loopback HTTP and WebSocket tests.
+- G2 launcher logo on the Android home screen.
 
 Link extraction is intentionally bounded to a 1 MiB response with short
 timeouts and at most three redirects. Loopback, link-local, private-network,

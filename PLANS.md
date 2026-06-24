@@ -2,7 +2,8 @@
 
 ## Current objective
 
-Ship Even Hub version 0.2.9 with timer-free surface rebuilds after native input.
+Ship Android APK version 0.2.1 with the supplied G2 launcher logo and Even Hub
+version 0.2.29 from the supplied HUD no-right-dots EHPK material.
 
 ## Current phase
 
@@ -288,6 +289,10 @@ Deliverables:
   pending.
 - Timer-free startup and interactive surface rebuild retries. Complete locally
   for version 0.2.9; physical validation pending.
+- Supplied HUD no-right-dots prebuilt EHPK material integrated for version
+  0.2.29. Complete locally; GitHub artifact validation pending.
+- Android launcher icon replaced with the supplied G2 logo and Android version
+  bumped to 0.2.1. Complete locally; GitHub Release pending.
 
 Automated status:
 
@@ -334,7 +339,7 @@ Exit criteria:
 ## Accepted implementation decisions
 
 - Android application ID: `io.github.genomiskdiagnostik.sendtog2`.
-- Android version: `0.2.0` (`versionCode` 4).
+- Android version: `0.2.1` (`versionCode` 5).
 - Android min SDK 26; compile and target SDK 36.
 - JDK 17, Gradle 8.13, AGP 8.13.2, and Kotlin 2.3.21.
 - HTML shares flatten to sanitized plain text.
@@ -344,7 +349,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.9`.
+- Even Hub package version: `0.2.29`.
 - Even Hub SDK and minimum package SDK version: `0.0.11`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
@@ -397,7 +402,7 @@ Exit criteria:
 
 ## Immediate next task
 
-Publish version 0.2.9 artifacts, then physically validate native-list
-single-click acceptance, double-click return latency after phone-side item
-opening, unchanged real-time scrolling, and the content-free diagnostic line.
-Continue screen-sharing and selected-text system validation separately.
+Publish Android 0.2.1 and Even Hub 0.2.29 artifacts, create a GitHub Release
+with the Android APK, then physically validate the supplied HUD no-right-dots
+EHPK, unchanged real-time scrolling, R1 single/double input behavior, Android
+launcher icon, screen-sharing, and selected-text system flow.

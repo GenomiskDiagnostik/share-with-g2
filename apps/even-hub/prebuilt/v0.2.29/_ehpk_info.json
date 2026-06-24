@@ -1,0 +1,31 @@
+{
+  "version": "0.2.26",
+  "header_len": 20,
+  "count": 6,
+  "flags": 0,
+  "app_name_record": "app.json",
+  "app_json_size": 560,
+  "dirs": [
+    "dist",
+    "dist/assets"
+  ],
+  "files": [
+    {
+      "path": "dist/assets/index-DGiErpkq.js",
+      "size": 118145,
+      "compressed": 45792
+    },
+    {
+      "path": "dist/assets/index-_rAsEpIx.css",
+      "size": 4478,
+      "compressed": 1590
+    },
+    {
+      "path": "dist/index.html",
+      "size": 566,
+      "compressed": 357
+    }
+  ],
+  "trailer_size": 68,
+  "patched_version": "0.2.16"
+}

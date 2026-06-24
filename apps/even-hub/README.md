@@ -2,6 +2,14 @@
 
 This directory contains the Even Hub G2 app.
 
+Current packaged version: `0.2.29`.
+
+Version `0.2.29` is packaged from the supplied HUD no-right-dots prebuilt
+bundle under `prebuilt/v0.2.29`. `npm run build` typechecks the local
+TypeScript sources and then copies that prebuilt web bundle to `dist` so
+GitHub Actions and local packaging produce the corrected EHPK content instead
+of rebuilding the older `0.2.9` HUD from source.
+
 ## Responsibilities
 
 - Connect to Even Hub bridge.
@@ -22,8 +30,10 @@ This directory contains the Even Hub G2 app.
 
 - Official Vite and Even Hub SDK structure.
 - Package ID: `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
+- Package version: `0.2.29`.
 - Network permission limited to WebSocket and HTTP on `localhost:8765` and
-  `127.0.0.1:8765`.
+  `127.0.0.1:8765`, plus GitHub release URLs used by the Android APK download
+  link in the mobile settings view.
 - Local client probes the WebSocket hostname alias first, then numeric
   WebSocket, hostname HTTP, and numeric HTTP. It falls back only after a
   browser-level network error or timeout.
@@ -76,6 +86,8 @@ This directory contains the Even Hub G2 app.
 - Vitest coverage for API validation, native-menu paging, scroll gating,
   protobuf-zero click normalization, tap arbitration, pagination, navigation,
   rendering, screen snapshots, reachability, and locale.
+- HUD v0.2.29 removes the right-side ellipsis suffix from truncated card
+  labels while preserving the v0.2.28 clock/header/logo/card/footer layout.
 
 ## Commands
 
@@ -85,6 +97,10 @@ npm test
 npm run build
 npm run pack
 ```
+
+`npm run pack` writes `send-to-g2.ehpk` from `app.json` plus the prepared
+`dist` directory. The prebuilt source notes shipped with the corrected EHPK are
+kept in `prebuilt/v0.2.29/notes`.
 
 Use `http://127.0.0.1:5173/?demo=1` during development to exercise the reader
 without Android. Demo mode is explicit and never replaces a failed live API

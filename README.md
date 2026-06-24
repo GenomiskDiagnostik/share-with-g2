@@ -8,6 +8,12 @@ Send to G2 appears as an Android Sharesheet and selected-text action. When a use
 
 The MVP deliberately avoids direct BLE reverse engineering. Notifications should flow through the existing Even notification mirroring pipeline where available. The G2 app is a reader/inbox, not a low-level hardware integration layer.
 
+Current release state:
+
+- Android APK: `0.2.1` (`versionCode` 5) with the G2 launcher logo.
+- Even Hub package: `0.2.29`, built from the supplied HUD no-right-dots prebuilt bundle.
+- GitHub Releases provide the Android APK; GitHub Actions continues to publish Android and Even Hub workflow artifacts.
+
 ## Primary platforms
 
 - Android companion app: Kotlin, Jetpack Compose, Room, DataStore, WorkManager only if needed.
@@ -71,6 +77,7 @@ send-to-g2/
       app.json.example
       package.json.example
       src/main.example.ts
+      prebuilt/v0.2.29/
   docs/
     product/prd.md
     architecture/system-architecture.md
