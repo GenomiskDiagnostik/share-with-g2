@@ -28,7 +28,10 @@ class SharedItemRepositoryTest {
             context,
             SharedDatabase::class.java,
         ).build()
-        repository = SharedItemRepository(database.sharedItemDao())
+        repository = SharedItemRepository(
+            database.sharedItemDao(),
+            database.dynamicSourceDao(),
+        )
     }
 
     @After

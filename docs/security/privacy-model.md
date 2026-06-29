@@ -7,6 +7,7 @@ Send to G2 handles user-shared content that may include private messages, links,
 ## Data storage
 
 - Store items locally in Room.
+- Store dynamic link source definitions locally in Room.
 - Store screen snapshots in memory only; do not persist them in Room in the
   first snapshot slice.
 - Do not sync to cloud in v0.1.
@@ -26,6 +27,8 @@ Send to G2 handles user-shared content that may include private messages, links,
   confirmation. Packaged WebView validation remains a release gate.
 - Read/unread updates require the same Bearer key as reads but are
   non-destructive and do not require confirmation.
+- Dynamic source create/update/delete/refresh routes require the same Bearer
+  key as inbox reads and remain loopback-only by default.
 - Screen sharing requires Android MediaProjection consent, a visible foreground
   notification with Stop action, and the same Bearer key before Even Hub can
   fetch the latest in-memory frame.
@@ -45,9 +48,15 @@ Send to G2 handles user-shared content that may include private messages, links,
 - Reject empty payloads.
 - Store minimal source metadata.
 - Fetch shared links without cookies, referrer, or the user's browser session.
+- Fetch dynamic link sources without cookies, referrer, or the user's browser
+  session.
 - Reject link extraction for loopback, link-local, private-network,
   credential-bearing, and non-HTTP(S) destinations.
+- Reject dynamic source fetches for loopback, link-local, private-network,
+  credential-bearing, and non-HTTP(S) destinations on every redirect.
 - Limit linked-page responses, redirects, and network timeouts.
+- Dynamic source CSS selectors are treated as untrusted input; invalid
+  selectors fail the fetch instead of being interpreted as code.
 
 ## Linked-page retrieval
 
@@ -59,6 +68,19 @@ request would. No Send to G2 cloud service is involved.
 The fetch does not reuse browser or ChatGPT cookies. Private conversations,
 login-protected pages, anti-bot challenges, and pages whose content exists only
 after JavaScript execution therefore remain URL-only.
+
+## Dynamic link retrieval
+
+Dynamic links are user-configured Android subscriptions. WorkManager periodically
+fetches a public HTTP(S) page, extracts the first DOM node matching the user's
+CSS selector from the static HTML response, converts it to sanitized plain text,
+and stores one current generated inbox item per source.
+
+The first slice does not run JavaScript, use a headless browser, send login
+cookies, or use a cloud fetcher. Each refresh reveals the phone's network
+address and the `SendToG2/0.1` user agent to the destination site. Android
+enforces a minimum 15-minute periodic interval; the manual refresh action is
+for immediate testing.
 
 ## G2 rendering
 
@@ -87,6 +109,9 @@ after JavaScript execution therefore remain URL-only.
 | Shared URL targets a local service | Public-address checks on every redirect |
 | Linked page returns a huge response | 1 MiB response cap and 64 KiB stored-text cap |
 | HTML injection | Plain-text extraction only |
+| Dynamic source targets internal service | Public-address checks on URL and redirects |
+| Dynamic selector extracts script/markup | Remove executable/embedded elements and store sanitized text only |
+| Dynamic polling surprises destination site | User-created source, visible status, minimum 15-minute periodic schedule |
 | Sensitive content in logs | No full-content logging |
 | Diagnostics expose shared content | Record bounded transport metadata only, in memory |
 | Accidental cloud exposure | No cloud dependency in v0.1 |

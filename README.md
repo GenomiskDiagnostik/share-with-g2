@@ -12,11 +12,12 @@ Current release state:
 
 - Android APK: `0.2.1` (`versionCode` 5) with the G2 launcher logo.
 - Even Hub package: `0.2.60`, built from the supplied read/unread home-cards prebuilt bundle.
+- Local API: `0.2.2` with dynamic source management and dynamic item metadata.
 - GitHub Releases provide the Android APK; GitHub Actions continues to publish Android and Even Hub workflow artifacts.
 
 ## Primary platforms
 
-- Android companion app: Kotlin, Jetpack Compose, Room, DataStore, WorkManager only if needed.
+- Android companion app: Kotlin, Jetpack Compose, Room, DataStore, WorkManager.
 - Even Hub app: TypeScript, Vite, `@evenrealities/even_hub_sdk`.
 - Data bridge: local WebSocket through `localhost:8765`, with numeric loopback
   and HTTP fallbacks on the same loopback-only Android socket. Cloud remains
@@ -46,6 +47,10 @@ Implemented v0.2 candidate:
 - Mark current item read or unread through the authenticated local API.
 - Start a user-approved low-FPS Android screen-sharing session and expose only
   its latest in-memory image to Even Hub.
+- Add Android-managed dynamic link sources that periodically fetch public
+  static HTML, extract a user-selected CSS selector, and expose the latest
+  sanitized text as a dynamic inbox item marked with a dot in Even Hub.
+- Pin/unpin items client-side in Even Hub and mark pinned items with a star.
 
 Deferred to later v0.2+:
 
@@ -53,7 +58,6 @@ Deferred to later v0.2+:
 - PDF/file ingestion.
 - OCR or PDF text extraction.
 - Search.
-- Favorites/pin.
 - Auto-expiry.
 - Cloud relay.
 - Direct BLE integration.

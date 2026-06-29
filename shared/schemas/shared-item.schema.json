@@ -32,6 +32,18 @@
     },
     "read": {
       "type": "boolean"
+    },
+    "origin": {
+      "type": "string",
+      "enum": ["share", "dynamic"]
+    },
+    "dynamicSourceId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dynamicFingerprint": {
+      "type": "string",
+      "minLength": 1
     }
   }
 }

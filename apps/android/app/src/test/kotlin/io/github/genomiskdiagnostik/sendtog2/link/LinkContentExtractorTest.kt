@@ -74,4 +74,28 @@ class LinkContentExtractorTest {
             ),
         )
     }
+
+    @Test
+    fun `extracts a selected dynamic content box`() {
+        val content = extractor.extractHtmlSelection(
+            """
+            <html>
+              <head><title>Fallback title</title></head>
+              <body>
+                <section id="ignored"><p>This text should not be selected.</p></section>
+                <section id="target">
+                  <h2>Selected headline</h2>
+                  <p>This selected box has enough readable content for dynamic G2 updates.</p>
+                </section>
+              </body>
+            </html>
+            """.trimIndent(),
+            "https://example.com",
+            "#target",
+        )
+
+        assertEquals("Selected headline", content?.title)
+        assertTrue(content?.text?.contains("dynamic G2 updates") == true)
+        assertFalse(content?.text?.contains("should not be selected") == true)
+    }
 }

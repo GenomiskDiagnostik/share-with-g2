@@ -91,4 +91,19 @@
     <string name="pairing_rotate_title">Create a new access key?</string>
     <string name="pairing_rotate_body">Even Hub will lose access until the new key is copied into it.</string>
     <string name="pairing_rotate_confirm">Create new key</string>
+    <string name="dynamic_sources_title">Dynamic links</string>
+    <string name="dynamic_sources_body">Fetches text from a public web page with a CSS selector. Periodic updates run no more often than every 15 minutes.</string>
+    <string name="dynamic_source_name">Name</string>
+    <string name="dynamic_source_url">URL</string>
+    <string name="dynamic_source_selector">CSS selector</string>
+    <string name="dynamic_source_frequency">Frequency in minutes</string>
+    <string name="dynamic_source_add">Add</string>
+    <string name="dynamic_source_save">Save</string>
+    <string name="dynamic_source_delete">Delete source</string>
+    <string name="dynamic_source_refresh">Refresh now</string>
+    <string name="dynamic_source_enabled">Enabled</string>
+    <string name="dynamic_source_empty">No dynamic links yet.</string>
+    <string name="dynamic_source_last_success">Last fetched: %1$s</string>
+    <string name="dynamic_source_last_error">Error: %1$s</string>
+    <string name="dynamic_source_unknown_status">Not fetched yet.</string>
 </resources>

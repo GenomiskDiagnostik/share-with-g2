@@ -9,6 +9,9 @@ import io.github.genomiskdiagnostik.sendtog2.api.LocalApiAccessKeyStore
 import io.github.genomiskdiagnostik.sendtog2.api.BearerTokenAuthorizer
 import io.github.genomiskdiagnostik.sendtog2.data.SharedDatabase
 import io.github.genomiskdiagnostik.sendtog2.data.SharedItemRepository
+import io.github.genomiskdiagnostik.sendtog2.link.DynamicSourceWorkScheduler
+import io.github.genomiskdiagnostik.sendtog2.link.DynamicSourceRefresher
+import io.github.genomiskdiagnostik.sendtog2.link.DynamicLinkContentFetcher
 import io.github.genomiskdiagnostik.sendtog2.notification.SharedNotificationService
 import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshotStore
 import kotlinx.coroutines.CoroutineScope
@@ -34,20 +37,30 @@ class SendToG2Application : Application() {
             applicationContext,
             SharedDatabase::class.java,
             SharedDatabase.NAME,
-        ).build()
+        ).addMigrations(SharedDatabase.MIGRATION_1_2).build()
 
-        repository = SharedItemRepository(database.sharedItemDao())
+        repository = SharedItemRepository(
+            database.sharedItemDao(),
+            database.dynamicSourceDao(),
+        )
         accessKeyStore = LocalApiAccessKeyStore(applicationContext)
         screenSnapshotStore = ScreenSnapshotStore()
         localApiServer = LocalApiServer(
             router = LocalApiRouter(
                 store = repository,
+                dynamicSourceStore = repository,
+                dynamicSourceRefresher = DynamicSourceRefresher(
+                    itemStore = repository,
+                    sourceStore = repository,
+                    fetcher = DynamicLinkContentFetcher(),
+                ),
                 screenSnapshotStore = screenSnapshotStore,
                 authorizer = BearerTokenAuthorizer(accessKeyStore),
                 trustLoopback = BuildConfig.DEBUG,
             ),
         )
         applicationScope.launch { accessKeyStore.getOrCreate() }
+        applicationScope.launch { DynamicSourceWorkScheduler.scheduleAll(this@SendToG2Application) }
         SharedNotificationService.createChannel(this)
     }
 

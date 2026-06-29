@@ -1,5 +1,6 @@
 package io.github.genomiskdiagnostik.sendtog2.data
 
+import io.github.genomiskdiagnostik.sendtog2.domain.DynamicSource
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import kotlinx.coroutines.flow.Flow
 
@@ -24,4 +25,20 @@ interface SharedItemStore {
     suspend fun deleteById(id: String): Boolean
 
     suspend fun clearAll()
+}
+
+interface DynamicSourceStore {
+    fun observeDynamicSources(): Flow<List<DynamicSource>>
+
+    suspend fun getDynamicSources(): List<DynamicSource>
+
+    suspend fun getDynamicSourceById(id: String): DynamicSource?
+
+    suspend fun upsertDynamicSource(source: DynamicSource)
+
+    suspend fun deleteDynamicSourceById(id: String): Boolean
+
+    suspend fun upsertDynamicItem(item: SharedItem)
+
+    suspend fun deleteDynamicItemForSource(sourceId: String): Boolean
 }

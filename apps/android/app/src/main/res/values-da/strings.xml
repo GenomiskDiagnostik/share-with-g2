@@ -91,4 +91,19 @@
     <string name="pairing_rotate_title">Opret en ny adgangsnøgle?</string>
     <string name="pairing_rotate_body">Even Hub mister adgangen, indtil den nye nøgle er kopieret ind.</string>
     <string name="pairing_rotate_confirm">Opret ny nøgle</string>
+    <string name="dynamic_sources_title">Dynamiske links</string>
+    <string name="dynamic_sources_body">Henter tekst fra en offentlig webside med en CSS-selector. Periodisk opdatering kører tidligst hvert 15. minut.</string>
+    <string name="dynamic_source_name">Navn</string>
+    <string name="dynamic_source_url">URL</string>
+    <string name="dynamic_source_selector">CSS-selector</string>
+    <string name="dynamic_source_frequency">Frekvens i minutter</string>
+    <string name="dynamic_source_add">Tilføj</string>
+    <string name="dynamic_source_save">Gem</string>
+    <string name="dynamic_source_delete">Slet kilde</string>
+    <string name="dynamic_source_refresh">Opdatér nu</string>
+    <string name="dynamic_source_enabled">Aktiv</string>
+    <string name="dynamic_source_empty">Ingen dynamiske links endnu.</string>
+    <string name="dynamic_source_last_success">Senest hentet: %1$s</string>
+    <string name="dynamic_source_last_error">Fejl: %1$s</string>
+    <string name="dynamic_source_unknown_status">Ikke hentet endnu.</string>
 </resources>

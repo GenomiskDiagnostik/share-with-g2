@@ -11,6 +11,9 @@ interface SharedItemDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: SharedItemEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(item: SharedItemEntity)
+
     @Query("SELECT * FROM shared_items ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<SharedItemEntity>>
 
@@ -36,6 +39,12 @@ interface SharedItemDao {
 
     @Query("UPDATE shared_items SET read = :read WHERE id = :id")
     suspend fun updateRead(id: String, read: Boolean): Int
+
+    @Query("SELECT * FROM shared_items WHERE dynamicSourceId = :sourceId LIMIT 1")
+    suspend fun getByDynamicSourceId(sourceId: String): SharedItemEntity?
+
+    @Query("DELETE FROM shared_items WHERE dynamicSourceId = :sourceId")
+    suspend fun deleteByDynamicSourceId(sourceId: String): Int
 
     @Query("DELETE FROM shared_items WHERE id = :id")
     suspend fun deleteById(id: String): Int

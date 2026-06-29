@@ -3,12 +3,14 @@ package io.github.genomiskdiagnostik.sendtog2.link
 import io.github.genomiskdiagnostik.sendtog2.domain.ShareParser
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import org.jsoup.select.Selector
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.InetAddress
 import java.net.URI
 import java.nio.charset.Charset
+import java.security.MessageDigest
 
 data class ExtractedLinkContent(
     val title: String?,
@@ -224,6 +226,40 @@ class LinkContentExtractor {
         )
     }
 
+    fun extractHtmlSelection(
+        html: String,
+        baseUri: String,
+        cssSelector: String,
+    ): ExtractedLinkContent? {
+        val selector = cssSelector.trim()
+        if (selector.isBlank()) return null
+        val document = Jsoup.parse(html, baseUri)
+        document.select(
+            "script, style, noscript, nav, header, footer, aside, form, " +
+                "svg, canvas, iframe, template",
+        ).remove()
+        val selected = try {
+            document.select(selector).firstOrNull()
+        } catch (_: Selector.SelectorParseException) {
+            return null
+        } ?: return null
+
+        val normalizedText = normalize(extractBlocks(selected))
+        if (!hasReadableContent(normalizedText)) return null
+        val title = sequenceOf(
+            selected.selectFirst("h1,h2,h3")?.text(),
+            document.selectFirst("meta[property=og:title]")?.attr("content"),
+            document.selectFirst("meta[name=twitter:title]")?.attr("content"),
+            document.title(),
+        ).map(::normalize)
+            .firstOrNull(String::isNotEmpty)
+            ?.take(ShareParser.MAX_TITLE_LENGTH)
+        return ExtractedLinkContent(
+            title = title,
+            text = normalizedText.take(MAX_EXTRACTED_TEXT_LENGTH).trimEnd(),
+        )
+    }
+
     private fun extractBlocks(element: Element): String {
         val blocks = element.select(BLOCK_SELECTOR)
             .filter { block -> block.select(BLOCK_SELECTOR).isEmpty() }
@@ -257,6 +293,95 @@ class LinkContentExtractor {
         const val BLOCK_SELECTOR = "h1,h2,h3,h4,h5,h6,p,li,pre,blockquote"
         const val MIN_CONTENT_LENGTH = 40
         const val MAX_EXTRACTED_TEXT_LENGTH = 60_000
+    }
+}
+
+data class DynamicLinkContent(
+    val title: String?,
+    val text: String,
+    val fingerprint: String,
+)
+
+sealed interface DynamicLinkFetchResult {
+    data class Success(val content: DynamicLinkContent) : DynamicLinkFetchResult
+    data object TemporaryFailure : DynamicLinkFetchResult
+    data object PermanentFailure : DynamicLinkFetchResult
+}
+
+class DynamicLinkContentFetcher internal constructor(
+    private val extractor: LinkContentExtractor = LinkContentExtractor(),
+    private val addressResolver: (String) -> Array<InetAddress> = InetAddress::getAllByName,
+    private val pageLoader: HttpPageLoader = BoundedHttpPageLoader,
+) {
+    fun fetch(url: String, cssSelector: String): DynamicLinkFetchResult {
+        var current = runCatching { URI(url) }.getOrNull()
+            ?: return DynamicLinkFetchResult.PermanentFailure
+
+        repeat(MAX_REDIRECTS + 1) { redirectCount ->
+            if (!PublicHttpUrlPolicy.isAllowed(current, addressResolver)) {
+                return DynamicLinkFetchResult.PermanentFailure
+            }
+            val response = try {
+                pageLoader.load(current)
+            } catch (_: ResponseTooLargeException) {
+                return DynamicLinkFetchResult.PermanentFailure
+            } catch (_: IOException) {
+                return DynamicLinkFetchResult.TemporaryFailure
+            }
+            if (response.status in 300..399) {
+                val location = response.location ?: return DynamicLinkFetchResult.PermanentFailure
+                if (redirectCount == MAX_REDIRECTS) return DynamicLinkFetchResult.PermanentFailure
+                current = runCatching { current.resolve(location) }.getOrNull()
+                    ?: return DynamicLinkFetchResult.PermanentFailure
+                return@repeat
+            }
+            if (response.status == 429 || response.status >= 500) {
+                return DynamicLinkFetchResult.TemporaryFailure
+            }
+            if (response.status !in 200..299) return DynamicLinkFetchResult.PermanentFailure
+            val mediaType = response.contentType
+                ?.substringBefore(';')
+                ?.trim()
+                ?.lowercase()
+                ?: return DynamicLinkFetchResult.PermanentFailure
+            if (mediaType !in setOf("text/html", "application/xhtml+xml")) {
+                return DynamicLinkFetchResult.PermanentFailure
+            }
+            val body = response.body.toString(parseCharset(response.contentType))
+            val content = extractor.extractHtmlSelection(body, current.toString(), cssSelector)
+                ?: return DynamicLinkFetchResult.PermanentFailure
+            return DynamicLinkFetchResult.Success(
+                DynamicLinkContent(
+                    title = content.title,
+                    text = content.text,
+                    fingerprint = sha256(content.text),
+                ),
+            )
+        }
+        return DynamicLinkFetchResult.PermanentFailure
+    }
+
+    private fun parseCharset(contentType: String?): Charset {
+        val charsetName = contentType
+            ?.split(';')
+            ?.drop(1)
+            ?.map(String::trim)
+            ?.firstOrNull { it.startsWith("charset=", ignoreCase = true) }
+            ?.substringAfter('=')
+            ?.trim()
+            ?.trim('"')
+        return charsetName
+            ?.let { runCatching { Charset.forName(it) }.getOrNull() }
+            ?: Charsets.UTF_8
+    }
+
+    private fun sha256(value: String): String {
+        val bytes = MessageDigest.getInstance("SHA-256").digest(value.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private companion object {
+        const val MAX_REDIRECTS = 3
     }
 }
 

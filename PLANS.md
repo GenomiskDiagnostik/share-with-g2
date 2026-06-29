@@ -15,6 +15,9 @@ Phase 3: Even Hub Shared Inbox reader slice.
 - Dynamic link fetching uses public static HTML plus user-provided CSS
   selectors. It does not use login cookies, a headless browser, JavaScript
   rendering, cloud fetchers, or private site sessions in the first slice.
+- JavaScript-rendered pages may require later RSS/Atom, JSON API, or
+  headless-browser support; the first slice documents that as unsupported
+  rather than adding hidden browser automation.
 - The tested Even Hub production WebView reaches Android through loopback
   WebSocket; HTTP Fetch remains blocked on both loopback aliases.
 - The MVP handles text and links only.
@@ -293,9 +296,16 @@ Deliverables:
 - Timer-free startup and interactive surface rebuild retries. Complete locally
   for version 0.2.9; physical validation pending.
 - Supplied read/unread home-cards prebuilt EHPK material integrated for version
-  0.2.60. Complete locally; GitHub artifact validation pending.
+  0.2.60. Complete locally and pushed to GitHub.
 - Android launcher icon replaced with the supplied G2 logo and Android version
   bumped to 0.2.1. Complete locally; GitHub Release pending.
+- Android dynamic link sources with Room persistence, loopback API management,
+  static HTML plus CSS selector extraction, WorkManager 15+ minute scheduling,
+  manual refresh, and Android settings UI. Complete locally; Gradle validation
+  pending because the local Windows network-drive Kotlin/Gradle daemon reaches
+  Kotlin compile and then hangs while connecting to the Kotlin daemon registry.
+- Even Hub accepts dynamic item metadata and marks dynamic inbox entries with
+  a dot alongside pinned-star markers. Complete locally.
 
 Automated status:
 
@@ -391,6 +401,16 @@ Exit criteria:
   stores only the latest in-memory PNG, and exposes it through authenticated
   `GET /screen-snapshot`. Android offers 1,000 and 500 ms intervals and Even Hub
   skips duplicate frame IDs while polling without overlapping requests.
+- Dynamic sources are Android-owned Room records. They fetch public static
+  HTTP(S) HTML without cookies, browser sessions, JavaScript rendering, private
+  network targets, or cloud services; CSS selector output is sanitized to plain
+  text and upserted as one current `origin = "dynamic"` inbox item per source.
+- Dynamic source refresh uses WorkManager periodic work with a minimum
+  15-minute interval plus a manual refresh action. Deleting the generated inbox
+  item does not delete the source, so the next successful refresh can recreate
+  it.
+- Local API version `0.2.2` adds dynamic source endpoints and optional
+  `SharedItem` dynamic metadata.
 
 ## Open decisions
 

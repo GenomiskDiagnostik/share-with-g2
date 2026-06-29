@@ -15,7 +15,7 @@ This must be treated as an assumption until tested in the target Even Hub runtim
 - Bind to loopback by default.
 - Return JSON.
 - Use UTF-8.
-- Version 0.1.2 uses `ws://localhost:8765/even-hub-ws` first, followed by the
+- Version 0.2.2 uses `ws://localhost:8765/even-hub-ws` first, followed by the
   numeric WebSocket alias and then the existing HTTP fallback aliases.
 - WebSocket requests use `{ id, method, path, accessKey?, body? }`; responses
   use `{ id, status, body }`. The access key is omitted for `/health`.
@@ -26,7 +26,8 @@ This must be treated as an assumption until tested in the target Even Hub runtim
   the packaged Even Hub WebView origin is not known yet.
 - `/health` remains unauthenticated so transport failures can be distinguished
   from pairing failures.
-- Every `/items` route requires `Authorization: Bearer <access-key>`.
+- Every `/items` and `/dynamic-sources` route requires
+  `Authorization: Bearer <access-key>`.
 - The Android app creates a random per-installation key and lets the user copy
   or rotate it. Even Hub stores the paired key in its local WebView storage.
 - Wildcard CORS does not grant inbox access without the key.
@@ -42,6 +43,26 @@ type SharedItem = {
   sourceApp?: string
   createdAt: number
   read: boolean
+  origin?: 'share' | 'dynamic'
+  dynamicSourceId?: string
+  dynamicFingerprint?: string
+}
+```
+
+Dynamic sources are Android-owned subscriptions that fetch one selected static
+HTML node into the normal inbox:
+
+```ts
+type DynamicSource = {
+  id: string
+  name: string
+  url: string
+  cssSelector: string
+  frequencyMinutes: number
+  enabled: boolean
+  lastFetchedAt?: number
+  lastSuccessAt?: number
+  lastError?: string
 }
 ```
 
@@ -69,7 +90,7 @@ Response:
 ```json
 {
   "ok": true,
-  "version": "0.1.2"
+  "version": "0.2.2"
 }
 ```
 
@@ -87,10 +108,16 @@ Response:
     "title": "https://example.com/article",
     "text": "https://example.com/article",
     "createdAt": 1710000000000,
-    "read": false
+    "read": false,
+    "origin": "share"
   }
 ]
 ```
+
+Dynamic items are returned inline with shared items, newest-first, with
+`origin: "dynamic"` plus `dynamicSourceId` and `dynamicFingerprint`. Deleting a
+dynamic inbox item deletes only the generated item. The Android dynamic source
+remains active and recreates the item on the next successful fetch.
 
 ### GET /items/{id}
 
@@ -136,6 +163,58 @@ Responses:
 
 - `204` on success.
 
+### GET /dynamic-sources
+
+Returns all configured dynamic sources. Requires the Bearer access key.
+
+### POST /dynamic-sources
+
+Creates a dynamic source. Requires the Bearer access key.
+
+Request:
+
+```json
+{
+  "name": "Driftsstatus",
+  "url": "https://example.com/status",
+  "cssSelector": "#status-card",
+  "frequencyMinutes": 15,
+  "enabled": true
+}
+```
+
+Responses:
+
+- `201` with source JSON.
+- `400` if the body is malformed, required fields are missing, or the URL is
+  not an HTTP(S) URL shape.
+
+### GET /dynamic-sources/{id}
+
+Returns one dynamic source. Requires the Bearer access key.
+
+### PATCH /dynamic-sources/{id}
+
+Updates a dynamic source. All fields are optional. Requires the Bearer access
+key. `frequencyMinutes` is coerced to at least 15 because Android WorkManager
+does not support tighter periodic scheduling.
+
+### DELETE /dynamic-sources/{id}
+
+Deletes the source and its current generated dynamic inbox item. Requires the
+Bearer access key.
+
+### POST /dynamic-sources/{id}/refresh
+
+Triggers an immediate fetch for manual testing. Requires the Bearer access key.
+
+Responses:
+
+- `200` with updated source JSON after success or recorded fetch failure.
+- `404` if the source is missing.
+- `409` if the source is disabled.
+- `503` if refresh support is not available in the running server.
+
 ### GET /screen-snapshot
 
 Returns the latest in-memory frame from a user-approved Android MediaProjection
@@ -162,9 +241,15 @@ The current Android server implements:
 - `PATCH /items/{id}`
 - `DELETE /items/{id}`
 - `DELETE /items`
+- `GET /dynamic-sources`
+- `POST /dynamic-sources`
+- `GET /dynamic-sources/{id}`
+- `PATCH /dynamic-sources/{id}`
+- `DELETE /dynamic-sources/{id}`
+- `POST /dynamic-sources/{id}/refresh`
 - `GET /screen-snapshot`
 - `OPTIONS`
-- JSON `400`, `401`, `404`, and `405` responses
+- JSON `400`, `401`, `404`, `405`, `409`, and `503` responses
 
 It binds only to `127.0.0.1`. The server is owned by a visible Android
 `dataSync` foreground service started from user-visible app and Sharesheet
@@ -192,6 +277,8 @@ The key must never appear in API diagnostics, logs, URLs, or query strings.
 - A `401` returns the reader to pairing; other failures preserve the current
   reader item and show a retryable error.
 - Read/unread changes are non-destructive and do not require confirmation.
+- Dynamic source management is Android-owned. Even Hub may delete the current
+  generated dynamic item, but it does not delete or disable the source.
 - Even Hub refreshes manually and polls periodically while preserving the
   current item and page when the item still exists.
 

@@ -21,7 +21,7 @@ class LocalApiRouterTest {
         assertEquals(200, response.status)
         assertEquals("*", response.headers["Access-Control-Allow-Origin"])
         assertEquals(
-            "GET, PATCH, DELETE, OPTIONS",
+            "GET, POST, PATCH, DELETE, OPTIONS",
             response.headers["Access-Control-Allow-Methods"],
         )
         assertEquals(
@@ -95,7 +95,7 @@ class LocalApiRouterTest {
         val response = router().route(ApiRequest("POST", "/items"))
 
         assertEquals(405, response.status)
-        assertEquals("GET, PATCH, DELETE, OPTIONS", response.headers["Allow"])
+        assertEquals("GET, DELETE, OPTIONS", response.headers["Allow"])
     }
 
     @Test
@@ -202,6 +202,61 @@ class LocalApiRouterTest {
     }
 
     @Test
+    fun `dynamic sources can be created listed patched and deleted`() = runBlocking {
+        val sources = FakeDynamicSourceStore()
+        val router = router(dynamicSourceStore = sources)
+
+        val created = router.route(
+            ApiRequest(
+                "POST",
+                "/dynamic-sources",
+                body = """
+                    {
+                      "name":"News",
+                      "url":"https://example.com/news",
+                      "cssSelector":"main article",
+                      "frequencyMinutes":5,
+                      "enabled":true
+                    }
+                """.trimIndent(),
+            ),
+        )
+        assertEquals(201, created.status)
+        val id = json(created.body)["id"]?.jsonPrimitive?.content ?: error("missing id")
+        assertEquals(15, json(created.body)["frequencyMinutes"]?.jsonPrimitive?.content?.toInt())
+
+        val list = router.route(ApiRequest("GET", "/dynamic-sources"))
+        assertEquals(200, list.status)
+        assertEquals(id, Json.parseToJsonElement(list.body).jsonArray[0].jsonObject["id"]?.jsonPrimitive?.content)
+
+        val patched = router.route(
+            ApiRequest(
+                "PATCH",
+                "/dynamic-sources/$id",
+                body = """{"enabled":false,"frequencyMinutes":30}""",
+            ),
+        )
+        assertEquals(200, patched.status)
+        assertEquals("false", json(patched.body)["enabled"]?.jsonPrimitive?.content)
+
+        assertEquals(204, router.route(ApiRequest("DELETE", "/dynamic-sources/$id")).status)
+        assertEquals(404, router.route(ApiRequest("GET", "/dynamic-sources/$id")).status)
+    }
+
+    @Test
+    fun `dynamic source creation rejects unsupported url shapes`() = runBlocking {
+        val response = router(dynamicSourceStore = FakeDynamicSourceStore()).route(
+            ApiRequest(
+                "POST",
+                "/dynamic-sources",
+                body = """{"name":"Bad","url":"file:///tmp/x","cssSelector":"main"}""",
+            ),
+        )
+
+        assertEquals(400, response.status)
+    }
+
+    @Test
     fun `unauthorized mutations leave repository unchanged`() = runBlocking {
         val store = FakeSharedItemStore(listOf(item("one", 100, "One")))
         val router = LocalApiRouter(
@@ -250,10 +305,12 @@ class LocalApiRouterTest {
     private fun router(
         store: FakeSharedItemStore = FakeSharedItemStore(),
         screenSnapshotStore: ScreenSnapshotStore = ScreenSnapshotStore(),
+        dynamicSourceStore: FakeDynamicSourceStore = FakeDynamicSourceStore(),
     ) = LocalApiRouter(
         store = store,
         version = "0.1.0-test",
         screenSnapshotStore = screenSnapshotStore,
+        dynamicSourceStore = dynamicSourceStore,
     )
 
     private fun json(value: String) = Json.parseToJsonElement(value).jsonObject

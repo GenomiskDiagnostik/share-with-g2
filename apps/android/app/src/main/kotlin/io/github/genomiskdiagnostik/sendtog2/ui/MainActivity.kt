@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
@@ -34,6 +35,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +58,7 @@ import io.github.genomiskdiagnostik.sendtog2.api.LocalApiDiagnosticsState
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiForegroundService
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiSelfTestState
 import io.github.genomiskdiagnostik.sendtog2.api.LocalApiState
+import io.github.genomiskdiagnostik.sendtog2.domain.DynamicSource
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItem
 import io.github.genomiskdiagnostik.sendtog2.domain.SharedItemType
 import io.github.genomiskdiagnostik.sendtog2.screen.ScreenSnapshot
@@ -71,9 +74,11 @@ class MainActivity : ComponentActivity() {
         val app = application as SendToG2Application
         MainViewModel.Factory(
             app.repository,
+            app.repository,
             app.localApiServer,
             app.accessKeyStore,
             app.screenSnapshotStore,
+            applicationContext,
         )
     }
 
@@ -126,6 +131,7 @@ class MainActivity : ComponentActivity() {
                 val screenSnapshot by viewModel.screenSnapshot.collectAsStateWithLifecycle()
                 val screenShareStatus by
                     viewModel.screenShareStatus.collectAsStateWithLifecycle()
+                val dynamicSources by viewModel.dynamicSources.collectAsStateWithLifecycle()
                 Surface(modifier = Modifier.fillMaxSize()) {
                     InboxScreen(
                         items = items,
@@ -135,6 +141,7 @@ class MainActivity : ComponentActivity() {
                         accessKey = accessKey,
                         screenSnapshot = screenSnapshot,
                         screenShareStatus = screenShareStatus,
+                        dynamicSources = dynamicSources,
                         notificationPermissionGranted = notificationPermissionGranted,
                         onRequestNotificationPermission = ::requestNotificationPermission,
                         onRunSelfTest = viewModel::runLocalApiSelfTest,
@@ -144,6 +151,10 @@ class MainActivity : ComponentActivity() {
                         onCaptureScreenSnapshot = ::requestScreenSnapshot,
                         onStopScreenShare = { ScreenSnapshotService.stop(this) },
                         onClearScreenSnapshot = viewModel::clearScreenSnapshot,
+                        onAddDynamicSource = viewModel::addDynamicSource,
+                        onUpdateDynamicSource = viewModel::updateDynamicSource,
+                        onDeleteDynamicSource = viewModel::deleteDynamicSource,
+                        onRefreshDynamicSource = viewModel::refreshDynamicSource,
                         onUpdateRead = viewModel::updateRead,
                         onDelete = viewModel::delete,
                         onClearAll = viewModel::clearAll,
@@ -199,6 +210,7 @@ private fun InboxScreen(
     accessKey: String,
     screenSnapshot: ScreenSnapshot?,
     screenShareStatus: ScreenShareStatus,
+    dynamicSources: List<DynamicSource>,
     notificationPermissionGranted: Boolean,
     onRequestNotificationPermission: () -> Unit,
     onRunSelfTest: () -> Unit,
@@ -208,6 +220,10 @@ private fun InboxScreen(
     onCaptureScreenSnapshot: (Long) -> Unit,
     onStopScreenShare: () -> Unit,
     onClearScreenSnapshot: () -> Unit,
+    onAddDynamicSource: (String, String, String, Long) -> Unit,
+    onUpdateDynamicSource: (DynamicSource) -> Unit,
+    onDeleteDynamicSource: (String) -> Unit,
+    onRefreshDynamicSource: (String) -> Unit,
     onUpdateRead: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onClearAll: () -> Unit,
@@ -244,6 +260,7 @@ private fun InboxScreen(
             apiDiagnostics = apiDiagnostics,
             selfTest = selfTest,
             accessKey = accessKey,
+            dynamicSources = dynamicSources,
             notificationPermissionGranted = notificationPermissionGranted,
             onBack = { showSettings = false },
             onRequestNotificationPermission = onRequestNotificationPermission,
@@ -251,6 +268,10 @@ private fun InboxScreen(
             onRestartApi = onRestartApi,
             onCopyAccessKey = onCopyAccessKey,
             onRotateAccessKey = onRotateAccessKey,
+            onAddDynamicSource = onAddDynamicSource,
+            onUpdateDynamicSource = onUpdateDynamicSource,
+            onDeleteDynamicSource = onDeleteDynamicSource,
+            onRefreshDynamicSource = onRefreshDynamicSource,
         )
         return
     }
@@ -338,6 +359,7 @@ private fun SettingsScreen(
     apiDiagnostics: LocalApiDiagnosticsState,
     selfTest: LocalApiSelfTestState,
     accessKey: String,
+    dynamicSources: List<DynamicSource>,
     notificationPermissionGranted: Boolean,
     onBack: () -> Unit,
     onRequestNotificationPermission: () -> Unit,
@@ -345,6 +367,10 @@ private fun SettingsScreen(
     onRestartApi: () -> Unit,
     onCopyAccessKey: (String) -> Unit,
     onRotateAccessKey: () -> Unit,
+    onAddDynamicSource: (String, String, String, Long) -> Unit,
+    onUpdateDynamicSource: (DynamicSource) -> Unit,
+    onDeleteDynamicSource: (String) -> Unit,
+    onRefreshDynamicSource: (String) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -382,6 +408,15 @@ private fun SettingsScreen(
                 accessKey = accessKey,
                 onCopy = onCopyAccessKey,
                 onRotate = onRotateAccessKey,
+            )
+        }
+        item {
+            DynamicSourcesCard(
+                sources = dynamicSources,
+                onAdd = onAddDynamicSource,
+                onUpdate = onUpdateDynamicSource,
+                onDelete = onDeleteDynamicSource,
+                onRefresh = onRefreshDynamicSource,
             )
         }
         if (!notificationPermissionGranted) {
@@ -566,6 +601,206 @@ private fun AccessKeyCard(
             ) {
                 Text(stringResource(R.string.pairing_rotate_key))
             }
+        }
+    }
+}
+
+@Composable
+private fun DynamicSourcesCard(
+    sources: List<DynamicSource>,
+    onAdd: (String, String, String, Long) -> Unit,
+    onUpdate: (DynamicSource) -> Unit,
+    onDelete: (String) -> Unit,
+    onRefresh: (String) -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var url by remember { mutableStateOf("") }
+    var selector by remember { mutableStateOf("") }
+    var frequency by remember { mutableStateOf("15") }
+
+    Card {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.dynamic_sources_title),
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.dynamic_sources_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.dynamic_source_name)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = url,
+                onValueChange = { url = it },
+                label = { Text(stringResource(R.string.dynamic_source_url)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = selector,
+                onValueChange = { selector = it },
+                label = { Text(stringResource(R.string.dynamic_source_selector)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = frequency,
+                onValueChange = { frequency = it.filter(Char::isDigit).take(4) },
+                label = { Text(stringResource(R.string.dynamic_source_frequency)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    onAdd(
+                        name,
+                        url,
+                        selector,
+                        frequency.toLongOrNull() ?: DynamicSource.MIN_FREQUENCY_MINUTES,
+                    )
+                    name = ""
+                    url = ""
+                    selector = ""
+                    frequency = "15"
+                },
+                enabled = name.isNotBlank() && url.isNotBlank() && selector.isNotBlank(),
+            ) {
+                Text(stringResource(R.string.dynamic_source_add))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            if (sources.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.dynamic_source_empty),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            } else {
+                sources.forEach { source ->
+                    DynamicSourceRow(
+                        source = source,
+                        onUpdate = onUpdate,
+                        onDelete = onDelete,
+                        onRefresh = onRefresh,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DynamicSourceRow(
+    source: DynamicSource,
+    onUpdate: (DynamicSource) -> Unit,
+    onDelete: (String) -> Unit,
+    onRefresh: (String) -> Unit,
+) {
+    var name by remember(source.id) { mutableStateOf(source.name) }
+    var url by remember(source.id) { mutableStateOf(source.url) }
+    var selector by remember(source.id) { mutableStateOf(source.cssSelector) }
+    var frequency by remember(source.id) { mutableStateOf(source.frequencyMinutes.toString()) }
+    var enabled by remember(source.id) { mutableStateOf(source.enabled) }
+
+    Column {
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = source.name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            Row {
+                Checkbox(
+                    checked = enabled,
+                    onCheckedChange = { enabled = it },
+                )
+                Text(
+                    text = stringResource(R.string.dynamic_source_enabled),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+        Text(
+            text = when {
+                source.lastError != null ->
+                    stringResource(R.string.dynamic_source_last_error, source.lastError)
+                source.lastSuccessAt != null ->
+                    stringResource(
+                        R.string.dynamic_source_last_success,
+                        formatTimestamp(source.lastSuccessAt),
+                    )
+                else -> stringResource(R.string.dynamic_source_unknown_status)
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(R.string.dynamic_source_name)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = url,
+            onValueChange = { url = it },
+            label = { Text(stringResource(R.string.dynamic_source_url)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = selector,
+            onValueChange = { selector = it },
+            label = { Text(stringResource(R.string.dynamic_source_selector)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = frequency,
+            onValueChange = { frequency = it.filter(Char::isDigit).take(4) },
+            label = { Text(stringResource(R.string.dynamic_source_frequency)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = {
+                    onUpdate(
+                        source.copy(
+                            name = name,
+                            url = url,
+                            cssSelector = selector,
+                            frequencyMinutes = frequency.toLongOrNull()
+                                ?: DynamicSource.MIN_FREQUENCY_MINUTES,
+                            enabled = enabled,
+                        ),
+                    )
+                },
+            ) {
+                Text(stringResource(R.string.dynamic_source_save))
+            }
+            OutlinedButton(onClick = { onRefresh(source.id) }) {
+                Text(stringResource(R.string.dynamic_source_refresh))
+            }
+        }
+        OutlinedButton(onClick = { onDelete(source.id) }) {
+            Text(stringResource(R.string.dynamic_source_delete))
         }
     }
 }

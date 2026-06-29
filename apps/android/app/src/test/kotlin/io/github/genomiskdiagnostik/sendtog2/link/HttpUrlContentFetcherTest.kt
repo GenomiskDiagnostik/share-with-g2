@@ -85,4 +85,33 @@ class HttpUrlContentFetcherTest {
             fetcher.fetch("https://example.com/unavailable"),
         )
     }
+
+    @Test
+    fun `dynamic fetcher extracts selected html and fingerprints content`() {
+        val fetcher = DynamicLinkContentFetcher(
+            addressResolver = resolver,
+            pageLoader = HttpPageLoader {
+                HttpPageResponse(
+                    status = 200,
+                    contentType = "text/html; charset=utf-8",
+                    location = null,
+                    body = """
+                        <html><body>
+                          <main><article class="box">
+                            <h1>Dynamic title</h1>
+                            <p>This dynamic box contains enough readable selected content.</p>
+                          </article></main>
+                        </body></html>
+                    """.trimIndent().encodeToByteArray(),
+                )
+            },
+        )
+
+        val result = fetcher.fetch("https://example.com/live", ".box")
+
+        assertTrue(result is DynamicLinkFetchResult.Success)
+        val content = (result as DynamicLinkFetchResult.Success).content
+        assertEquals("Dynamic title", content.title)
+        assertEquals(64, content.fingerprint.length)
+    }
 }
