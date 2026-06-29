@@ -16,6 +16,10 @@ export type SharedItem = {
   sourceApp?: string
   createdAt: number
   read: boolean
+  pinned?: boolean
+  origin?: 'share' | 'dynamic'
+  dynamicSourceId?: string
+  dynamicFingerprint?: string
 }
 
 export type ScreenSnapshot = {
@@ -310,7 +314,11 @@ function parseSharedItem(value: unknown): SharedItem {
     value.createdAt < 0 ||
     typeof value.read !== 'boolean' ||
     !optionalString(value.title) ||
-    !optionalString(value.sourceApp)
+    !optionalString(value.sourceApp) ||
+    !optionalBoolean(value.pinned) ||
+    !optionalOrigin(value.origin) ||
+    !optionalString(value.dynamicSourceId) ||
+    !optionalString(value.dynamicFingerprint)
   ) {
     throw new InvalidApiResponseError()
   }
@@ -323,6 +331,12 @@ function parseSharedItem(value: unknown): SharedItem {
     read: value.read,
     ...(value.title === undefined ? {} : { title: value.title }),
     ...(value.sourceApp === undefined ? {} : { sourceApp: value.sourceApp }),
+    ...(value.pinned === undefined ? {} : { pinned: value.pinned }),
+    ...(value.origin === undefined ? {} : { origin: value.origin }),
+    ...(value.dynamicSourceId === undefined ? {} : { dynamicSourceId: value.dynamicSourceId }),
+    ...(value.dynamicFingerprint === undefined
+      ? {}
+      : { dynamicFingerprint: value.dynamicFingerprint }),
   }
 }
 
@@ -365,4 +379,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function optionalString(value: unknown): value is string | undefined {
   return value === undefined || typeof value === 'string'
+}
+
+function optionalBoolean(value: unknown): value is boolean | undefined {
+  return value === undefined || typeof value === 'boolean'
+}
+
+function optionalOrigin(value: unknown): value is SharedItem['origin'] | undefined {
+  return value === undefined || value === 'share' || value === 'dynamic'
 }

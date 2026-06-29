@@ -37,6 +37,7 @@ import {
 } from './inbox/inboxMenu'
 import { ReaderScrollGate } from './inbox/readerScrollGate'
 import { ItemTapTracker } from './inbox/itemTapTracker'
+import { applyPins, isPinnedItem, setPinnedItemId } from './inbox/pinnedItems'
 import { nativeListAction, normalizeBridgeEvent } from './inbox/bridgeEvent'
 import { rebuildWithRetry } from './inbox/rebuildWithRetry'
 import { R1InputTracker } from './inbox/r1Input'
@@ -63,6 +64,7 @@ const SNAPSHOT_IMAGE_CONTAINER_NAME = 'snapshotImage'
 const REFRESH_INTERVAL_MS = 10_000
 const SCREEN_SHARE_REFRESH_INTERVAL_MS = 500
 type MutationAction = 'delete-current' | 'clear'
+type MutationFailureReason = ReaderFailureReason | 'pinned-delete' | 'pinned-clear'
 type GlassesMode = 'menu' | 'reader' | 'delete-confirmation'
 
 async function main() {
@@ -223,10 +225,16 @@ async function main() {
 
   const mutate = async (
     action: MutationAction,
-  ): Promise<ReaderFailureReason | undefined> => {
+  ): Promise<MutationFailureReason | undefined> => {
     if (state.status !== 'ready') return undefined
     const currentItem = getCurrentItem(state)
     if (!currentItem) return undefined
+    if (action === 'delete-current' && isPinnedItem(currentItem)) {
+      return 'pinned-delete'
+    }
+    if (action === 'clear' && state.items.some(isPinnedItem)) {
+      return 'pinned-clear'
+    }
     try {
       if (!demoMode) {
         if (!client) return 'network'
@@ -245,6 +253,11 @@ async function main() {
 
   const requestDeleteFromMenu = async (entry: InboxMenuEntry) => {
     if (entry.kind !== 'item') return
+    const item = state.status === 'ready' ? state.items[entry.itemIndex] : undefined
+    if (isPinnedItem(item)) {
+      setText(root, '#mutation-status', strings.pinnedDeleteBlocked)
+      return
+    }
     glassesMode = 'delete-confirmation'
     await dispatch({ type: 'select-item', index: entry.itemIndex })
   }
@@ -256,7 +269,7 @@ async function main() {
       if (failure === 'unauthorized') {
         await dispatch({ type: 'fail', reason: failure })
       } else {
-        setText(root, '#mutation-status', strings.mutationFailure)
+        setText(root, '#mutation-status', mutationFailureText(strings, failure))
         await render()
       }
       return
@@ -266,13 +279,13 @@ async function main() {
 
   const performRefresh = async (): Promise<RefreshOutcome> => {
     if (demoMode) {
-      await dispatch({ type: 'refresh', items: DEMO_ITEMS })
+      await dispatch({ type: 'refresh', items: applyPins(DEMO_ITEMS) })
       hasLoadedItems = true
       return 'success'
     }
     if (!client) return 'retryable-failure'
     try {
-      await dispatch({ type: 'refresh', items: await client.items() })
+      await dispatch({ type: 'refresh', items: applyPins(await client.items()) })
       hasLoadedItems = true
       return 'success'
     } catch (error) {
@@ -319,6 +332,14 @@ async function main() {
     }
   }
 
+  const toggleCurrentPin = async () => {
+    if (state.status !== 'ready') return
+    const currentItem = getCurrentItem(state)
+    if (!currentItem) return
+    setPinnedItemId(currentItem.id, !isPinnedItem(currentItem))
+    await dispatch({ type: 'refresh', items: applyPins(state.items) })
+  }
+
   bindWebActions(
     root,
     dispatch,
@@ -327,6 +348,7 @@ async function main() {
     mutate,
     () => refreshItems(true),
     updateCurrentRead,
+    toggleCurrentPin,
     selectItem,
   )
   renderWeb(
@@ -371,7 +393,7 @@ async function main() {
   }
 
   if (demoMode) {
-    await dispatch({ type: 'load', items: DEMO_ITEMS })
+    await dispatch({ type: 'load', items: applyPins(DEMO_ITEMS) })
   } else {
     client = new LocalApiClient(
       undefined,
@@ -736,7 +758,9 @@ function createInboxMenuLayout(
           itemCount: menu.entries.length,
           itemWidth: 0,
           isItemSelectBorderEn: 1,
-          itemName: menu.entries.map(entry => entry.label),
+          itemName: menu.entries.map(entry =>
+            entry.kind === 'item' ? entry.cardLabel : entry.label,
+          ),
         }),
         isEventCapture: 1,
       }),
@@ -822,6 +846,7 @@ function renderWeb(
       </div>
       <div class="mutation-actions" id="mutation-actions" hidden>
         <button type="button" data-read-toggle id="read-toggle"></button>
+        <button type="button" data-pin-toggle id="pin-toggle"></button>
         <button type="button" class="danger-secondary" data-mutation="delete-current" id="delete-current"></button>
         <button type="button" class="danger" data-mutation="clear" id="clear-all"></button>
       </div>
@@ -860,6 +885,12 @@ function renderWeb(
     root,
     '#read-toggle',
     view.currentRead ? strings.markUnread : strings.markRead,
+  )
+  const currentItem = getCurrentItem(state)
+  setText(
+    root,
+    '#pin-toggle',
+    isPinnedItem(currentItem) ? strings.unpinItem : strings.pinItem,
   )
   setText(root, '#confirmation-cancel', strings.mutationCancel)
 
@@ -906,8 +937,20 @@ function renderItemPicker(
     button.setAttribute('aria-current', index === state.selectedIndex ? 'true' : 'false')
     const title = item.title?.trim() || strings.untitled
     const readState = item.read ? strings.readStateRead : strings.readStateUnread
-    button.textContent = `${index + 1}. ${title} - ${readState}`
-    list.append(button)
+    const markers = [
+      item.pinned ? '★' : '',
+      item.origin === 'dynamic' ? '•' : '',
+    ].filter(Boolean).join('')
+    button.textContent = `${index + 1}. ${markers ? `${markers} ` : ''}${title} - ${readState}`
+    const pinButton = document.createElement('button')
+    pinButton.type = 'button'
+    pinButton.className = 'item-pin-button'
+    pinButton.dataset.togglePinIndex = String(index)
+    pinButton.textContent = isPinnedItem(item) ? strings.unpinItem : strings.pinItem
+    const row = document.createElement('div')
+    row.className = 'item-picker-row'
+    row.append(button, pinButton)
+    list.append(row)
   })
 }
 
@@ -916,9 +959,10 @@ function bindWebActions(
   dispatch: (action: ReaderAction) => Promise<void>,
   strings: ReturnType<typeof getStrings>,
   getState: () => ReaderState,
-  mutate: (action: MutationAction) => Promise<ReaderFailureReason | undefined>,
+  mutate: (action: MutationAction) => Promise<MutationFailureReason | undefined>,
   refreshItems: () => Promise<void>,
   updateCurrentRead: () => Promise<void>,
+  toggleCurrentPin: () => Promise<void>,
   selectItem: (index: number) => Promise<void>,
 ) {
   const itemTapTracker = new ItemTapTracker(
@@ -927,6 +971,10 @@ function bindWebActions(
       void selectItem(index).then(() => {
         const item = getCurrentItem(getState())
         if (!item) return
+        if (isPinnedItem(item)) {
+          setText(root, '#mutation-status', strings.pinnedDeleteBlocked)
+          return
+        }
         const title = item.title?.trim() || strings.untitled
         openMutationConfirmation(root, strings, 'delete-current', title)
       })
@@ -956,6 +1004,35 @@ function bindWebActions(
           ? strings.markUnread
           : strings.markRead
       })
+      return
+    }
+
+    const pinToggle = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-pin-toggle]',
+    )
+    if (pinToggle) {
+      pinToggle.disabled = true
+      pinToggle.textContent = strings.mutationWorking
+      void toggleCurrentPin().finally(() => {
+        if (!pinToggle.isConnected) return
+        const currentItem = getCurrentItem(getState())
+        pinToggle.disabled = false
+        pinToggle.textContent = isPinnedItem(currentItem)
+          ? strings.unpinItem
+          : strings.pinItem
+      })
+      return
+    }
+
+    const itemPinToggle = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-toggle-pin-index]',
+    )
+    if (itemPinToggle) {
+      const index = Number(itemPinToggle.dataset.togglePinIndex)
+      const state = getState()
+      if (Number.isInteger(index) && state.status === 'ready') {
+        void selectItem(index).then(toggleCurrentPin)
+      }
       return
     }
 
@@ -998,7 +1075,7 @@ function bindWebActions(
           await dispatch({ type: 'fail', reason: failure })
           return
         }
-        setText(root, '#mutation-status', strings.mutationFailure)
+        setText(root, '#mutation-status', mutationFailureText(strings, failure))
       })
       return
     }
@@ -1013,6 +1090,14 @@ function bindWebActions(
       if (state.status !== 'ready') return
       const item = getCurrentItem(state)
       if (!item) return
+      if (action === 'delete-current' && isPinnedItem(item)) {
+        setText(root, '#mutation-status', strings.pinnedDeleteBlocked)
+        return
+      }
+      if (action === 'clear' && state.items.some(isPinnedItem)) {
+        setText(root, '#mutation-status', strings.pinnedClearBlocked)
+        return
+      }
       const title = item.title?.trim() || strings.untitled
       openMutationConfirmation(root, strings, action, title)
       return
@@ -1332,6 +1417,15 @@ function classifyFailure(
   }
   if (error instanceof InvalidApiResponseError) return 'invalid-response'
   return 'network'
+}
+
+function mutationFailureText(
+  strings: ReturnType<typeof getStrings>,
+  failure: MutationFailureReason,
+): string {
+  if (failure === 'pinned-delete') return strings.pinnedDeleteBlocked
+  if (failure === 'pinned-clear') return strings.pinnedClearBlocked
+  return strings.mutationFailure
 }
 
 function setText(root: HTMLElement, selector: string, value: string) {

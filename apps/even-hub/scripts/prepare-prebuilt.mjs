@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const projectDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const sourceDir = resolve(projectDir, 'prebuilt', 'v0.2.29', 'web')
+const sourceDir = resolve(projectDir, 'prebuilt', 'v0.2.60', 'web')
 const outputDir = resolve(projectDir, 'dist')
 
 await rm(outputDir, { recursive: true, force: true })

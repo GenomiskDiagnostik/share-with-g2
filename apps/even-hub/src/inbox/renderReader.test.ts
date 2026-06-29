@@ -59,4 +59,27 @@ describe('renderReader', () => {
 
     expect(renderReader(state, 'en').glassText.length).toBeLessThanOrEqual(1_000)
   })
+
+  it('renders pinned and dynamic markers in reader metadata', () => {
+    const view = renderReader({
+      status: 'ready',
+      items: [
+        {
+          id: 'one',
+          type: 'url',
+          title: 'Live',
+          text: 'https://example.com',
+          createdAt: 100,
+          read: false,
+          pinned: true,
+          origin: 'dynamic',
+        },
+      ],
+      selectedIndex: 0,
+      pageIndex: 0,
+    }, 'en')
+
+    expect(view.meta).toContain('★•')
+    expect(view.help).toContain('★')
+  })
 })

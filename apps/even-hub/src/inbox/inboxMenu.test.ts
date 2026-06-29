@@ -23,9 +23,27 @@ describe('inbox menu', () => {
       '1. [New] Same title',
       '2. [Read] Same title',
     ])
+    expect(page.entries[1]).toMatchObject({
+      cardLabel: '1. [New]\nSame title',
+    })
     expect(findInboxMenuEntry(page, page.entries[2]?.label)).toMatchObject({
       kind: 'item',
       itemIndex: 1,
+    })
+  })
+
+  it('marks pinned and dynamic items in native menu cards', () => {
+    const page = buildInboxMenu([
+      { ...item('one'), pinned: true, origin: 'dynamic' },
+    ], 0, labels)
+
+    expect(page.entries[1]).toMatchObject({
+      label: '1. ★• [New] Item one',
+      cardLabel: '1. ★• [New]\nItem one',
+    })
+    expect(findInboxMenuEntry(page, '1. ★• [New]\nItem one')).toMatchObject({
+      kind: 'item',
+      itemIndex: 0,
     })
   })
 

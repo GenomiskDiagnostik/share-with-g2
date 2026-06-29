@@ -10,7 +10,7 @@ export type InboxMenuLabels = {
 }
 
 export type InboxMenuEntry =
-  | { kind: 'item'; itemIndex: number; label: string }
+  | { kind: 'item'; itemIndex: number; label: string; cardLabel: string }
   | { kind: 'previous-page'; label: string }
   | { kind: 'next-page'; label: string }
   | { kind: 'screen-sharing'; label: string }
@@ -38,10 +38,16 @@ export function buildInboxMenu(
       const itemIndex = start + localIndex
       const title = item.title?.trim() || labels.untitled
       const readState = item.read ? labels.read : labels.unread
+      const markers = [
+        item.pinned ? '★' : '',
+        item.origin === 'dynamic' ? '•' : '',
+      ].filter(Boolean).join('')
+      const markerPrefix = markers ? `${markers} ` : ''
       return {
         kind: 'item' as const,
         itemIndex,
-        label: clampLabel(`${itemIndex + 1}. [${readState}] ${title}`),
+        label: clampLabel(`${itemIndex + 1}. ${markerPrefix}[${readState}] ${title}`),
+        cardLabel: clampLabel(`${itemIndex + 1}. ${markerPrefix}[${readState}]\n${title}`),
       }
     })
 
@@ -65,6 +71,11 @@ export function findInboxMenuEntry(
     ? page.entries.find(entry => entry.label === selectedName)
     : undefined
   if (namedEntry) return namedEntry
+  const namedCardEntry = selectedName
+    ? page.entries.find(entry =>
+      entry.kind === 'item' && entry.cardLabel === selectedName)
+    : undefined
+  if (namedCardEntry) return namedCardEntry
   return selectedIndex === undefined ? undefined : page.entries[selectedIndex]
 }
 

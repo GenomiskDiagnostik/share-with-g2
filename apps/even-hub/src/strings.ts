@@ -60,6 +60,10 @@ export type AppStrings = {
   clearAll: string
   markRead: string
   markUnread: string
+  pinItem: string
+  unpinItem: string
+  pinnedDeleteBlocked: string
+  pinnedClearBlocked: string
   readStateRead: string
   readStateUnread: string
   refreshSuccess: string
@@ -153,6 +157,10 @@ const strings: Record<SupportedLocale, AppStrings> = {
     clearAll: 'Ryd alt',
     markRead: 'Markér læst',
     markUnread: 'Markér ulæst',
+    pinItem: 'Fastgør',
+    unpinItem: 'Frigør',
+    pinnedDeleteBlocked: 'Fastgjorte elementer skal frigøres i appen, før de kan slettes.',
+    pinnedClearBlocked: 'Indbakken indeholder fastgjorte elementer. Frigør dem før rydning.',
     readStateRead: 'læst',
     readStateUnread: 'ulæst',
     refreshSuccess: 'Indbakken er opdateret.',
@@ -244,6 +252,10 @@ const strings: Record<SupportedLocale, AppStrings> = {
     clearAll: 'Clear all',
     markRead: 'Mark read',
     markUnread: 'Mark unread',
+    pinItem: 'Pin',
+    unpinItem: 'Unpin',
+    pinnedDeleteBlocked: 'Pinned items must be unpinned in the app before deleting.',
+    pinnedClearBlocked: 'The inbox contains pinned items. Unpin them before clearing.',
     readStateRead: 'read',
     readStateUnread: 'unread',
     refreshSuccess: 'Inbox refreshed.',

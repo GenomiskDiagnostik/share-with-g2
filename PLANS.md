@@ -2,8 +2,8 @@
 
 ## Current objective
 
-Ship Android APK version 0.2.1 with the supplied G2 launcher logo and Even Hub
-version 0.2.29 from the supplied HUD no-right-dots EHPK material.
+Use Even Hub `0.2.60` as the canonical baseline and add Android dynamic link
+sources.
 
 ## Current phase
 
@@ -12,6 +12,9 @@ Phase 3: Even Hub Shared Inbox reader slice.
 ## Active assumptions
 
 - The Android app is the persistence owner.
+- Dynamic link fetching uses public static HTML plus user-provided CSS
+  selectors. It does not use login cookies, a headless browser, JavaScript
+  rendering, cloud fetchers, or private site sessions in the first slice.
 - The tested Even Hub production WebView reaches Android through loopback
   WebSocket; HTTP Fetch remains blocked on both loopback aliases.
 - The MVP handles text and links only.
@@ -289,8 +292,8 @@ Deliverables:
   pending.
 - Timer-free startup and interactive surface rebuild retries. Complete locally
   for version 0.2.9; physical validation pending.
-- Supplied HUD no-right-dots prebuilt EHPK material integrated for version
-  0.2.29. Complete locally; GitHub artifact validation pending.
+- Supplied read/unread home-cards prebuilt EHPK material integrated for version
+  0.2.60. Complete locally; GitHub artifact validation pending.
 - Android launcher icon replaced with the supplied G2 logo and Android version
   bumped to 0.2.1. Complete locally; GitHub Release pending.
 
@@ -349,7 +352,7 @@ Exit criteria:
 - GitHub Actions publishes debug APK and report artifacts.
 - Even Hub package ID:
   `io.github.genomiskdiagnostik.sendtog2.sharedinbox`.
-- Even Hub package version: `0.2.29`.
+- Even Hub package version: `0.2.60`.
 - Even Hub SDK and minimum package SDK version: `0.0.11`.
 - Even Hub tries authenticated loopback WebSocket first, then the existing HTTP
   aliases only after network failure, as documented in ADR-014.
@@ -399,10 +402,20 @@ Exit criteria:
 - Whether physical G2 image-container behavior and 500 ms update load are good
   enough for low-FPS screen-sharing release.
 - Whether a later screen feature should add OCR alongside low-FPS images.
+- Whether dynamic sources should later support RSS/Atom, JSON APIs, or
+  headless-browser extraction for JavaScript-rendered pages.
 
 ## Immediate next task
 
-Publish Android 0.2.1 and Even Hub 0.2.29 artifacts, create a GitHub Release
-with the Android APK, then physically validate the supplied HUD no-right-dots
-EHPK, unchanged real-time scrolling, R1 single/double input behavior, Android
-launcher icon, screen-sharing, and selected-text system flow.
+Publish Android 0.2.1 and Even Hub 0.2.60 artifacts, create a GitHub Release
+with the Android APK, then physically validate the supplied read/unread
+home-cards EHPK, unchanged real-time scrolling, R1 single/double input
+behavior, Android launcher icon, screen-sharing, selected-text system flow, and
+dynamic link source refresh.
+
+## Supplied package evidence
+
+- Even Hub v0.2.60 source zip SHA-256:
+  `7BD61A80908C97F0E9059A3CD71BFA9AFF02F629E1E455E3B0A1D52EEF0E7A75`.
+- Even Hub v0.2.60 EHPK SHA-256:
+  `6B840EE8EAFC2270FF71429FFD86A425A2869F14AD160B6755329B764FB3BE38`.

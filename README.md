@@ -11,7 +11,7 @@ The MVP deliberately avoids direct BLE reverse engineering. Notifications should
 Current release state:
 
 - Android APK: `0.2.1` (`versionCode` 5) with the G2 launcher logo.
-- Even Hub package: `0.2.29`, built from the supplied HUD no-right-dots prebuilt bundle.
+- Even Hub package: `0.2.60`, built from the supplied read/unread home-cards prebuilt bundle.
 - GitHub Releases provide the Android APK; GitHub Actions continues to publish Android and Even Hub workflow artifacts.
 
 ## Primary platforms
@@ -77,7 +77,7 @@ send-to-g2/
       app.json.example
       package.json.example
       src/main.example.ts
-      prebuilt/v0.2.29/
+    prebuilt/v0.2.60/
   docs/
     product/prd.md
     architecture/system-architecture.md

@@ -49,14 +49,18 @@ export function renderReader(
   const title = item.title?.trim() || copy.untitled
   const type = item.type === 'url' ? copy.typeUrl : copy.typeText
   const readState = item.read ? copy.readStateRead : copy.readStateUnread
+  const marker = [
+    item.pinned ? '★' : '',
+    item.origin === 'dynamic' ? '•' : '',
+  ].filter(Boolean).join('')
   const meta = copy.readerMeta(
     state.selectedIndex + 1,
     state.items.length,
     pageIndex + 1,
     pages.length,
-    `${type} - ${readState}`,
+    `${type} - ${readState}${marker ? ` · ${marker}` : ''}`,
   )
-  const help = copy.readerHelp
+  const help = item.pinned ? `${copy.readerHelp} · ★` : copy.readerHelp
   const glassText = `${meta}\n${title}\n\n${body}\n\n${help}`
 
   return {

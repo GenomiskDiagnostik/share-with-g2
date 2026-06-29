@@ -147,6 +147,21 @@ describe('reader state', () => {
     if (next.status !== 'ready') return
     expect(next.items.map(value => value.read)).toEqual([false, true])
   })
+
+  it('does not mark an item read when menu focus selects it', () => {
+    const state: ReaderState = {
+      status: 'ready',
+      items: [item('one'), item('two')],
+      selectedIndex: 0,
+      pageIndex: 0,
+    }
+
+    const next = reduceReader(state, { type: 'select-item', index: 1 })
+
+    expect(next.status).toBe('ready')
+    if (next.status !== 'ready') return
+    expect(next.items.map(value => value.read)).toEqual([false, false])
+  })
 })
 
 function item(id: string, text = `Text for ${id}`): SharedItem {
