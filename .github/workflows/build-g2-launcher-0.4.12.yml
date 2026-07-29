@@ -1,0 +1,106 @@
+name: Build G2 Launcher 0.4.12
+
+on:
+  push:
+    branches:
+      - build/g2-launcher-0.4.12-image-safety
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Reconstruct editable source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _candidate _work _out
+          cat .ci/g2-launcher-0.4.12/source12.part.*.b64 | tr -d '\r\n' | base64 --decode > _candidate/source.zip
+          unzip -q _candidate/source.zip -d _candidate/unpacked
+          root="_candidate/unpacked"
+          if [ ! -f "$root/package.json" ]; then
+            root="$(find "$root" -mindepth 1 -maxdepth 2 -type f -name package.json -printf '%h\n' | head -n1)"
+          fi
+          test -n "$root"
+          cp -a "$root"/. _work/
+          test -f _work/src/main.ts
+          test -f _work/app.json
+          test -f _work/package.json
+
+      - name: Validate image-safety source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'RUNTIME_IMAGE_MIN_GAP_MS' _work/src/main.ts
+          grep -q 'ImageRawDataUpdate' _work/src/main.ts
+          grep -q 'cancelPendingRuntimeImages' _work/src/main.ts
+          grep -q 'waitForRuntimeImageTransport' _work/src/main.ts
+          grep -q '"version": "0.4.12"' _work/app.json
+          grep -q '"min_sdk_version": "0.0.12"' _work/app.json
+          grep -q '"@evenrealities/even_hub_sdk": "0.0.12"' _work/package.json
+          if grep -Eq 'new Function\s*\(|\beval\s*\(' _work/src _work/index.html; then
+            echo 'Dynamic code execution found' >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        working-directory: _work
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+        run: npm install --no-audit --no-fund
+
+      - name: Build and validate bundle
+        working-directory: _work
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build
+          for file in dist/assets/*.js; do node --check "$file"; done
+          if grep -REn 'new Function\s*\(|\beval\s*\(' src dist; then
+            echo 'Dynamic code execution found in source or bundle' >&2
+            exit 1
+          fi
+
+      - name: Pack EHPK
+        working-directory: _work
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx @evenrealities/evenhub-cli@0.1.13 pack app.json dist -o ../_out/g2-launcher-0.4.12.ehpk
+          test -s ../_out/g2-launcher-0.4.12.ehpk
+
+      - name: Create editable source ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd _work
+          zip -qr ../_out/g2-launcher-0.4.12-source.zip \
+            app.json dist src README.md index.html package.json package-lock.json \
+            tsconfig.json vite.config.ts public
+          cd ..
+          unzip -t _out/g2-launcher-0.4.12-source.zip
+          sha256sum _out/g2-launcher-0.4.12.ehpk _out/g2-launcher-0.4.12-source.zip | tee _out/SHA256SUMS.txt
+
+      - name: Upload release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: g2-launcher-0.4.12-release
+          path: |
+            _out/g2-launcher-0.4.12.ehpk
+            _out/g2-launcher-0.4.12-source.zip
+            _out/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
