@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - build/g2-launcher-0.4.12-image-safety
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
