@@ -26,11 +26,11 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install archive recovery tool
+      - name: Install archive recovery tools
         shell: bash
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq p7zip-full
+          sudo apt-get install -y -qq p7zip-full zip unzip
 
       - name: Reconstruct editable source
         shell: bash
@@ -43,37 +43,62 @@ jobs:
             parts=(.ci/g2-launcher-0.4.12/${prefix}.part.*.b64)
             shopt -u nullglob
             if [ ${#parts[@]} -eq 0 ]; then continue; fi
-            cat "${parts[@]}" | tr -d '\r\n' | base64 --decode > "_candidate/${prefix}.zip" || true
-            mkdir -p "_candidate/unpacked-${prefix}"
-            7z x -y -o"_candidate/unpacked-${prefix}" "_candidate/${prefix}.zip" >/tmp/7z-${prefix}.log 2>&1 || true
-            candidate="_candidate/unpacked-${prefix}"
-            if [ -f "$candidate/src/main.ts" ] && [ -f "$candidate/package.json" ]; then
-              root="$candidate"
-              break
-            fi
-            found="$(find "$candidate" -mindepth 1 -maxdepth 4 -type f -path '*/src/main.ts' -printf '%h\n' | sed 's#/src$##' | head -n1)"
-            if [ -n "$found" ] && [ -f "$found/package.json" ]; then
-              root="$found"
-              break
-            fi
+
+            archive="_candidate/${prefix}.zip"
+            cat "${parts[@]}" | tr -d '\r\n' | base64 --decode > "$archive" || true
+            echo "Decoded ${prefix}: $(wc -c < "$archive") bytes"
+
+            repaired="_candidate/${prefix}-repaired.zip"
+            zip -FF "$archive" --out "$repaired" >/tmp/zipfix-${prefix}.log 2>&1 || true
+
+            for input in "$archive" "$repaired"; do
+              [ -s "$input" ] || continue
+              candidate="_candidate/unpacked-${prefix}-$(basename "$input" .zip)"
+              mkdir -p "$candidate"
+              7z x -y -o"$candidate" "$input" >/tmp/7z-${prefix}-$(basename "$input").log 2>&1 || true
+
+              if [ -f "$candidate/src/main.ts" ] && [ -f "$candidate/package.json" ]; then
+                root="$candidate"
+                break 2
+              fi
+
+              found="$(find "$candidate" -mindepth 1 -maxdepth 5 -type f -path '*/src/main.ts' -printf '%h\n' | sed 's#/src$##' | head -n1)"
+              if [ -n "$found" ] && [ -f "$found/package.json" ]; then
+                root="$found"
+                break 2
+              fi
+            done
           done
-          test -n "$root"
+
+          if [ -z "$root" ]; then
+            echo 'Unable to recover editable source archive' >&2
+            find _candidate -maxdepth 4 -type f -printf '%p %s bytes\n' | sort
+            cat /tmp/zipfix-*.log 2>/dev/null || true
+            exit 1
+          fi
+
           cp -a "$root"/. _work/
           test -f _work/src/main.ts
           test -f _work/app.json
           test -f _work/package.json
 
+          # G2 Launcher is its own project. The temporary CI repository is not
+          # used as the runtime catalog address in the packaged application.
+          sed -i 's#https://github.com/GenomiskDiagnostik/share-with-g2/tree/g2-launcher-catalog/catalog#https://github.com/GenomiskDiagnostik/g2-launcher/tree/main/catalog#g' \
+            _work/src/main.ts _work/README.md || true
+
       - name: Validate image-safety source
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'RUNTIME_IMAGE_MIN_GAP_MS' _work/src/main.ts
-          grep -q 'ImageRawDataUpdate' _work/src/main.ts
-          grep -q 'cancelPendingRuntimeImages' _work/src/main.ts
-          grep -q 'waitForRuntimeImageTransport' _work/src/main.ts
+          grep -q 'RUNTIME_IMAGE_MIN_INTERVAL_MS' _work/src/main.ts
+          grep -q 'queueRuntimeImage' _work/src/main.ts
+          grep -q 'drainRuntimeImages' _work/src/main.ts
+          grep -q 'runtimeDisplaySerial' _work/src/main.ts
           grep -q '"version": "0.4.12"' _work/app.json
-          grep -q '"min_sdk_version": "0.0.12"' _work/app.json
-          grep -q '"@evenrealities/even_hub_sdk": "0.0.12"' _work/package.json
+          grep -q '"min_sdk_version": "0.0.11"' _work/app.json
+          grep -q '"@evenrealities/even_hub_sdk": "0.0.11"' _work/package.json
+          grep -q 'GenomiskDiagnostik/g2-launcher/tree/main/catalog' _work/src/main.ts
           if grep -Eq 'new Function\s*\(|\beval\s*\(' _work/src _work/index.html; then
             echo 'Dynamic code execution found' >&2
             exit 1
@@ -97,7 +122,7 @@ jobs:
             exit 1
           fi
 
-      - name: Pack EHPK
+      - name: Pack EHPK locally with Even Hub CLI
         working-directory: _work
         shell: bash
         run: |
