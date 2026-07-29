@@ -1,0 +1,45 @@
+name: Build G2 Launcher 0.4.12
+
+on:
+  push:
+    branches:
+      - build/g2-launcher-0.4.12-image-safety
+    paths:
+      - '.github/workflows/build-g2-launcher-0412.yml'
+      - '.ci/g2-launcher-0.4.12/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct source archive
+        shell: bash
+        run: |
+          mkdir -p /tmp/g2-source
+          cat .ci/g2-launcher-0.4.12/source12.part.*.b64 | tr -d '\n\r' | base64 --decode > /tmp/g2-launcher-0.4.12-source.zip
+          unzip -q /tmp/g2-launcher-0.4.12-source.zip -d /tmp/g2-source
+          test -f /tmp/g2-source/package.json
+      - name: Install dependencies
+        working-directory: /tmp/g2-source
+        run: npm ci
+      - name: Build and validate
+        working-directory: /tmp/g2-source
+        run: |
+          npm run build
+          node --check dist/assets/*.js
+          ! grep -R "new Function\|eval(" src dist
+      - name: Pack EHPK
+        working-directory: /tmp/g2-source
+        run: npx @evenrealities/evenhub-cli pack app.json dist -o /tmp/g2-launcher-0.4.12.ehpk
+      - name: Create editable source ZIP
+        working-directory: /tmp/g2-source
+        run: zip -qr /tmp/g2-launcher-0.4.12-source.zip app.json dist src README.md index.html package.json package-lock.json tsconfig.json vite.config.ts public
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g2-launcher-0.4.12
+          path: |
+            /tmp/g2-launcher-0.4.12.ehpk
+            /tmp/g2-launcher-0.4.12-source.zip
+          if-no-files-found: error
