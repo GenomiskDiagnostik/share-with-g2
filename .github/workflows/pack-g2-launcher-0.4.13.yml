@@ -6,6 +6,13 @@ on:
       - build-g2-launcher-0.4.13
     paths:
       - pack-input.done
+  pull_request:
+    branches:
+      - main
+    paths:
+      - pack-input.done
+      - pack-input/**
+      - .github/workflows/pack-g2-launcher-0.4.13.yml
   workflow_dispatch:
 
 jobs:
