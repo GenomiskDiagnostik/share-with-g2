@@ -1,0 +1,55 @@
+name: Pack G2 Launcher 0.4.13
+
+on:
+  push:
+    branches:
+      - build-g2-launcher-0.4.13
+    paths:
+      - pack-input.done
+  workflow_dispatch:
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Decode prebuilt package input
+        run: |
+          cat pack-input/part-* > pack-input.b64
+          base64 --decode pack-input.b64 > pack-input.zip
+          mkdir app
+          unzip -q pack-input.zip -d app
+
+      - name: Validate manifest and JavaScript
+        run: |
+          node -e "const a=require('./app/app.json'); if(a.version!=='0.4.13') throw new Error('Wrong version'); if(a.entrypoint!=='index.html') throw new Error('Wrong entrypoint')"
+          test -f app/dist/index.html
+          for file in app/dist/assets/*.js; do node --check "$file"; done
+
+      - name: Install official Even Hub CLI
+        run: npm install --no-save @evenrealities/evenhub-cli@0.1.13
+
+      - name: Pack EHPK
+        run: npx evenhub pack app/app.json app/dist -o g2-launcher-0.4.13.ehpk
+
+      - name: Build report
+        run: |
+          sha256sum g2-launcher-0.4.13.ehpk > g2-launcher-0.4.13-sha256.txt
+          printf 'Manifest: PASS\nnode --check: PASS\nOfficial CLI pack: PASS\n' > g2-launcher-0.4.13-build-report.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g2-launcher-0.4.13-ehpk
+          path: |
+            g2-launcher-0.4.13.ehpk
+            g2-launcher-0.4.13-sha256.txt
+            g2-launcher-0.4.13-build-report.txt
+          if-no-files-found: error
+          retention-days: 7
