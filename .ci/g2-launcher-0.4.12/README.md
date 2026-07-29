@@ -1,0 +1,1 @@
+The GitHub Actions workflow on this branch produces the validated G2 Launcher 0.4.12 EHPK and editable source ZIP. The release specifically serializes and paces child-app image updates to protect the G2 transport when running AR Weather Bearing through the launcher.
