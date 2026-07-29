@@ -26,34 +26,37 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Install archive recovery tool
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq p7zip-full
+
       - name: Reconstruct editable source
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p _candidate _work _out
-          selected=""
+          root=""
           for prefix in source12 source; do
             shopt -s nullglob
             parts=(.ci/g2-launcher-0.4.12/${prefix}.part.*.b64)
             shopt -u nullglob
             if [ ${#parts[@]} -eq 0 ]; then continue; fi
             cat "${parts[@]}" | tr -d '\r\n' | base64 --decode > "_candidate/${prefix}.zip" || true
-            if unzip -t "_candidate/${prefix}.zip" >/dev/null 2>&1; then
-              selected="_candidate/${prefix}.zip"
+            mkdir -p "_candidate/unpacked-${prefix}"
+            7z x -y -o"_candidate/unpacked-${prefix}" "_candidate/${prefix}.zip" >/tmp/7z-${prefix}.log 2>&1 || true
+            candidate="_candidate/unpacked-${prefix}"
+            if [ -f "$candidate/src/main.ts" ] && [ -f "$candidate/package.json" ]; then
+              root="$candidate"
               break
             fi
-            printf 'y\n' | zip -FF "_candidate/${prefix}.zip" --out "_candidate/${prefix}.repaired.zip" >/tmp/zip-repair.log 2>&1 || true
-            if unzip -t "_candidate/${prefix}.repaired.zip" >/dev/null 2>&1; then
-              selected="_candidate/${prefix}.repaired.zip"
+            found="$(find "$candidate" -mindepth 1 -maxdepth 4 -type f -path '*/src/main.ts' -printf '%h\n' | sed 's#/src$##' | head -n1)"
+            if [ -n "$found" ] && [ -f "$found/package.json" ]; then
+              root="$found"
               break
             fi
           done
-          test -n "$selected"
-          unzip -q "$selected" -d _candidate/unpacked
-          root="_candidate/unpacked"
-          if [ ! -f "$root/package.json" ]; then
-            root="$(find "$root" -mindepth 1 -maxdepth 3 -type f -name package.json -printf '%h\n' | head -n1)"
-          fi
           test -n "$root"
           cp -a "$root"/. _work/
           test -f _work/src/main.ts
