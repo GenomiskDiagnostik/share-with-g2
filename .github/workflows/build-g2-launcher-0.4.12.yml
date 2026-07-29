@@ -42,6 +42,11 @@ jobs:
               selected="_candidate/${prefix}.zip"
               break
             fi
+            printf 'y\n' | zip -FF "_candidate/${prefix}.zip" --out "_candidate/${prefix}.repaired.zip" >/tmp/zip-repair.log 2>&1 || true
+            if unzip -t "_candidate/${prefix}.repaired.zip" >/dev/null 2>&1; then
+              selected="_candidate/${prefix}.repaired.zip"
+              break
+            fi
           done
           test -n "$selected"
           unzip -q "$selected" -d _candidate/unpacked
