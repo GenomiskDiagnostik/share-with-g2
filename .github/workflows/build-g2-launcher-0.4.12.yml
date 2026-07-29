@@ -31,11 +31,23 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _candidate _work _out
-          cat .ci/g2-launcher-0.4.12/source12.part.*.b64 | tr -d '\r\n' | base64 --decode > _candidate/source.zip
-          unzip -q _candidate/source.zip -d _candidate/unpacked
+          selected=""
+          for prefix in source12 source; do
+            shopt -s nullglob
+            parts=(.ci/g2-launcher-0.4.12/${prefix}.part.*.b64)
+            shopt -u nullglob
+            if [ ${#parts[@]} -eq 0 ]; then continue; fi
+            cat "${parts[@]}" | tr -d '\r\n' | base64 --decode > "_candidate/${prefix}.zip" || true
+            if unzip -t "_candidate/${prefix}.zip" >/dev/null 2>&1; then
+              selected="_candidate/${prefix}.zip"
+              break
+            fi
+          done
+          test -n "$selected"
+          unzip -q "$selected" -d _candidate/unpacked
           root="_candidate/unpacked"
           if [ ! -f "$root/package.json" ]; then
-            root="$(find "$root" -mindepth 1 -maxdepth 2 -type f -name package.json -printf '%h\n' | head -n1)"
+            root="$(find "$root" -mindepth 1 -maxdepth 3 -type f -name package.json -printf '%h\n' | head -n1)"
           fi
           test -n "$root"
           cp -a "$root"/. _work/
