@@ -1,0 +1,73 @@
+name: Build G2 Launcher 0.4.13
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - build-g2-launcher-0.4.13
+    paths:
+      - build-input.done
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decode source input
+        run: |
+          cat build-input/part-* > build-input.b64
+          base64 --decode build-input.b64 > source-input.zip
+          mkdir app
+          unzip -q source-input.zip -d app
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci --registry=https://registry.npmjs.org
+
+      - name: Build
+        working-directory: app
+        run: npm run build
+
+      - name: JavaScript syntax check
+        working-directory: app
+        run: |
+          for file in dist/assets/*.js; do
+            node --check "$file"
+          done
+
+      - name: Pack EHPK with official CLI
+        working-directory: app
+        run: npx @evenrealities/evenhub-cli@0.1.13 pack app.json dist -o g2-launcher-0.4.13.ehpk
+
+      - name: Create editable source ZIP
+        working-directory: app
+        run: |
+          zip -qr g2-launcher-0.4.13-source.zip . \
+            -x 'node_modules/*' 'dist/*' '*.ehpk' 'g2-launcher-0.4.13-source.zip'
+
+      - name: Record QA checks
+        working-directory: app
+        run: |
+          sha256sum g2-launcher-0.4.13.ehpk > g2-launcher-0.4.13-sha256.txt
+          sha256sum public/catalog-packages/*.zip >> g2-launcher-0.4.13-sha256.txt
+          printf 'Build: PASS\nnode --check: PASS\nPack: PASS\n' > g2-launcher-0.4.13-build-report.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g2-launcher-0.4.13-release
+          path: |
+            app/g2-launcher-0.4.13.ehpk
+            app/g2-launcher-0.4.13-source.zip
+            app/g2-launcher-0.4.13-sha256.txt
+            app/g2-launcher-0.4.13-build-report.txt
+            app/app.json
+            app/dist/**
+          if-no-files-found: error
+          retention-days: 7
